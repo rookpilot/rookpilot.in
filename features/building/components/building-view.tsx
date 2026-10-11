@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
 import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
+import { NoBuilding } from "@/components/no-building";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MarkDoneDialog } from "@/features/schedule/components/mark-done-dialog";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
-import { selectSpaces } from "@/lib/data/selectors";
+import { selectLogsForItem, selectSpaces, type AgendaEntry } from "@/lib/data/selectors";
 import type { AppData } from "@/lib/data/types";
 import type { Building, Schedule } from "@/lib/domain/models";
 
@@ -17,7 +21,7 @@ import { RoomList } from "./room-list";
 export function BuildingView() {
   const current = useCurrentBuilding();
   if (!current) return <BuildingSkeleton />;
-  if (!current.building) return null;
+  if (!current.building) return <NoBuilding />;
   return <BuildingEditor data={current.data} building={current.building} />;
 }
 
@@ -26,6 +30,7 @@ function BuildingEditor({ data, building }: { data: AppData; building: Building 
   const buildingItems = data.items.filter((i) => i.buildingId === building.id);
   const { room, item, pane, selectRoom, selectItem, back } = useBuildingSelection(rooms, buildingItems);
   const actions = createBuildingActions(data, building);
+  const [marking, setMarking] = useState<AgendaEntry[] | null>(null);
 
   const itemCounts = new Map<string, number>();
   for (const i of buildingItems) itemCounts.set(i.spaceId, (itemCounts.get(i.spaceId) ?? 0) + 1);
@@ -68,14 +73,17 @@ function BuildingEditor({ data, building }: { data: AppData; building: Building 
           room={room}
           rooms={rooms}
           schedules={item ? (schedulesByItem.get(item.id) ?? []) : []}
+          logs={item ? selectLogsForItem(data, item.id) : []}
           today={data.today}
           visibleOnMobile={pane === "detail"}
           onBack={back}
           onDeleted={() => room && selectRoom(room.id)}
           onMoved={(roomId) => item && selectItem(roomId, item.id)}
+          onMarkDone={(schedule) => item && room && setMarking([{ schedule, item, space: room }])}
           actions={actions}
         />
       </div>
+      <MarkDoneDialog target={marking} onClose={() => setMarking(null)} data={data} building={building} />
     </Page>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -8,26 +8,31 @@ import { DuePill } from "@/components/due-pill";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatShortDate } from "@/lib/dates";
-import type { ISODate, Item, Schedule, Space } from "@/lib/domain/models";
+import type { ISODate, Item, LogEntry, Schedule, Space } from "@/lib/domain/models";
 import { formatRepeat } from "@/lib/domain/schedule";
+import { formatMoney } from "@/lib/money";
 
 import type { BuildingActions } from "../actions";
 import { ItemDetailsDialog } from "./dialogs/item-details-dialog";
 import { ScheduleDialog } from "./dialogs/schedule-dialog";
-import { Pane } from "./pane";
-import { RowMenu } from "./row-menu";
+import { Pane } from "@/components/layout/pane";
+import { EmptyState } from "@/components/empty-state";
+import { RowMenu } from "@/components/row-menu";
 
 interface ItemDetailProps {
   item: Item | null;
   room: Space | null;
   rooms: Space[];
   schedules: Schedule[];
+  /** This item's completions, newest first. */
+  logs: LogEntry[];
   today: ISODate;
   visibleOnMobile: boolean;
   onBack: () => void;
   onDeleted: () => void;
   /** Called when the item is moved to another room, so the selection can follow it. */
   onMoved: (roomId: string) => void;
+  onMarkDone: (schedule: Schedule) => void;
   actions: BuildingActions;
 }
 
@@ -39,16 +44,16 @@ type DialogState =
   | { kind: "delete-timer"; schedule: Schedule }
   | null;
 
-export function ItemDetail({ item, room, rooms, schedules, today, visibleOnMobile, onBack, onDeleted, onMoved, actions }: ItemDetailProps) {
+export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleOnMobile, onBack, onDeleted, onMoved, onMarkDone, actions }: ItemDetailProps) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const close = (open: boolean) => !open && setDialog(null);
 
   if (!item) {
     return (
       <Pane title="Item" visibleOnMobile={false}>
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           Pick an item to see its details and timers.
-        </p>
+        </EmptyState>
       </Pane>
     );
   }
@@ -99,9 +104,9 @@ export function ItemDetail({ item, room, rooms, schedules, today, visibleOnMobil
       </div>
 
       {schedules.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           No timers yet. Add one, like &ldquo;Clean every 6 months&rdquo;.
-        </p>
+        </EmptyState>
       ) : (
         <ul className="flex flex-col divide-y rounded-xl border bg-card">
           {schedules.map((schedule) => (
@@ -109,10 +114,29 @@ export function ItemDetail({ item, room, rooms, schedules, today, visibleOnMobil
               key={schedule.id}
               schedule={schedule}
               today={today}
+              onMarkDone={() => onMarkDone(schedule)}
               onTogglePause={(paused) => actions.setSchedulePaused(schedule.id, paused)}
               onEdit={() => setDialog({ kind: "edit-timer", schedule })}
               onDelete={() => setDialog({ kind: "delete-timer", schedule })}
             />
+          ))}
+        </ul>
+      )}
+
+      <h3 className="text-sm font-bold">History</h3>
+      {logs.length === 0 ? (
+        <EmptyState>Nothing done yet. Mark a timer done and it shows up here.</EmptyState>
+      ) : (
+        <ul className="flex flex-col divide-y rounded-xl border bg-card">
+          {logs.map((log) => (
+            <li key={log.id} className="flex items-baseline gap-3 px-3 py-2 text-sm">
+              <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">{formatShortDate(log.doneOn, today)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{log.title}</span>
+                {log.note && <span className="block truncate text-xs text-muted-foreground">{log.note}</span>}
+              </span>
+              {log.cost !== null && <span className="shrink-0 font-mono text-xs">{formatMoney(log.cost)}</span>}
+            </li>
           ))}
         </ul>
       )}
@@ -139,7 +163,7 @@ export function ItemDetail({ item, room, rooms, schedules, today, visibleOnMobil
         open={dialog?.kind === "delete-item"}
         onOpenChange={close}
         title={`Delete ${item.name}?`}
-        description="Its timers are deleted too."
+        description="Its timers and history are deleted too."
         confirmLabel="Delete item"
         onConfirm={() => {
           actions.deleteItem(item.id);
@@ -161,12 +185,13 @@ export function ItemDetail({ item, room, rooms, schedules, today, visibleOnMobil
 interface ScheduleRowProps {
   schedule: Schedule;
   today: ISODate;
+  onMarkDone: () => void;
   onTogglePause: (paused: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-function ScheduleRow({ schedule, today, onTogglePause, onEdit, onDelete }: ScheduleRowProps) {
+function ScheduleRow({ schedule, today, onMarkDone, onTogglePause, onEdit, onDelete }: ScheduleRowProps) {
   const switchId = useId();
   const paused = !schedule.active;
 
@@ -182,6 +207,9 @@ function ScheduleRow({ schedule, today, onTogglePause, onEdit, onDelete }: Sched
         </p>
       </div>
       <DuePill nextDueOn={schedule.nextDueOn} today={today} paused={paused} />
+      <Button variant="outline" size="icon-sm" aria-label={`Mark done: ${schedule.title}`} title="Mark done" disabled={paused} onClick={onMarkDone}>
+        <Check />
+      </Button>
       <div className="flex items-center gap-1.5">
         <label htmlFor={switchId} className="sr-only">
           {paused ? `Resume ${schedule.title}` : `Pause ${schedule.title}`}

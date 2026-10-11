@@ -50,3 +50,63 @@ export interface Schedule {
   /** Paused schedules keep their dates but don't show up as due. */
   active: boolean;
 }
+
+/** One completion of a timer: the History entry "Mark done" creates. */
+export interface LogEntry {
+  id: string;
+  buildingId: string;
+  itemId: string;
+  /** Null when the timer was deleted after it was done. */
+  scheduleId: string | null;
+  /** The task's title when it was done, so renaming the timer later doesn't rewrite history. */
+  title: string;
+  doneOn: ISODate;
+  note: string;
+  cost: number | null;
+  /** Contacts who helped. */
+  contactIds: string[];
+}
+
+/** Someone who helps keep your buildings running. Contacts belong to the account, not one building. */
+export interface Contact {
+  id: string;
+  name: string;
+  company: string;
+  trade: string;
+  phone: string;
+  email: string;
+  /** Handle without the @. */
+  instagram: string;
+  /** An uploaded photo as a data URL, or null to show initials. */
+  photoUrl: string | null;
+  whyWeLikeThem: string;
+}
+
+export type WorkKind = "project" | "repair";
+export type ProjectStatus = "idea" | "planning" | "in_progress" | "done";
+export type RepairStatus = "open" | "in_progress" | "fixed";
+export type WorkStatus = ProjectStatus | RepairStatus;
+export type PerformedBy = "diy" | "hired";
+
+/** A project (adds or improves something) or a repair (fixes something that broke). */
+export interface Work {
+  id: string;
+  buildingId: string;
+  kind: WorkKind;
+  title: string;
+  status: WorkStatus;
+  spaceId: string | null;
+  itemId: string | null;
+  performedBy: PerformedBy;
+  cost: number | null;
+  /** Projects only. */
+  budget: number | null;
+  /** When a repair was reported, or a project started. */
+  startedOn: ISODate | null;
+  /** When a repair is scheduled, or a project's target date. Shows on the calendar. */
+  plannedOn: ISODate | null;
+  /** Set when the status becomes done or fixed. */
+  finishedOn: ISODate | null;
+  notes: string;
+  contactIds: string[];
+}

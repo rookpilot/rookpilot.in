@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { dataReducer } from "./reducer";
 import { createSampleData } from "./sample-data";
-import { selectAgenda, selectBuildingSummary, selectCurrentBuilding } from "./selectors";
+import { selectAgenda, selectBuildingSummary, selectContactHistory, selectCurrentBuilding, selectHistory, selectWork } from "./selectors";
 
 const TODAY = "2026-10-10";
 
@@ -35,5 +35,30 @@ describe("selectors", () => {
     expect(summary.overdue).toBe(agenda.filter((e) => e.schedule.nextDueOn < TODAY).length);
     expect(summary.overdue).toBeGreaterThan(0);
     expect(summary.items).toBe(26);
+  });
+});
+
+describe("work and history selectors", () => {
+  it("lists unfinished work first, soonest planned first", () => {
+    const repairs = selectWork(createSampleData(TODAY), "elm", "repair");
+    expect(repairs.map((w) => w.status)).toEqual(["in_progress", "open", "fixed", "fixed"]);
+    expect(repairs.at(-1)?.id).toBe("work-shingles");
+  });
+
+  it("counts open repairs on Home", () => {
+    expect(selectBuildingSummary(createSampleData(TODAY), "elm").openRepairs).toBe(2);
+  });
+
+  it("puts completions and finished work in History, newest first", () => {
+    const history = selectHistory(createSampleData(TODAY), "elm");
+    const dates = history.map((e) => e.date);
+    expect(dates).toEqual([...dates].sort().reverse());
+    expect(history.some((e) => e.kind === "repair" && e.work.id === "work-sink-leak")).toBe(true);
+    expect(history.some((e) => e.kind === "repair" && e.work.id === "work-garage-door")).toBe(false);
+  });
+
+  it("shows everything a contact helped with, including unfinished work", () => {
+    const helped = selectContactHistory(createSampleData(TODAY), "contact-dana");
+    expect(helped.map((e) => e.kind).sort()).toEqual(["repair", "task"]);
   });
 });

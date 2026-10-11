@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 import { CountStepper } from "@/components/form/count-stepper";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import { ROOM_KIND_LABELS } from "@/lib/domain/room";
 import { formatSchedules } from "@/lib/domain/schedule";
@@ -30,9 +31,9 @@ const TEMPLATE_LIST_ID = "item-template-names";
 export function ItemsStep({ rooms, items, totals, onToggle, onCountChange, onRemove, onAdd }: ItemsStepProps) {
   if (rooms.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <EmptyState>
         There are no rooms yet. Go back to add rooms, or finish and add items later from the Building tab.
-      </p>
+      </EmptyState>
     );
   }
 

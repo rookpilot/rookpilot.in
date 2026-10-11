@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ComingSoon } from "@/features/shell/components/coming-soon";
+import { ScheduleSkeleton, ScheduleView } from "@/features/schedule/components/schedule-view";
 
 export const metadata: Metadata = { title: "Schedule" };
 
 export default function SchedulePage() {
-  return <ComingSoon title="Schedule" description="Every timer in your building as a list, or on a week or month calendar. Mark tasks done to reset their timers." arrivesIn="PR 3" />;
+  // The view and date come from the URL, which is only known in the browser.
+  return (
+    <Suspense fallback={<ScheduleSkeleton />}>
+      <ScheduleView />
+    </Suspense>
+  );
 }

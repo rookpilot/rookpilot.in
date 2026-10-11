@@ -1,4 +1,4 @@
-import type { Building, ISODate, Item, Schedule, Space } from "@/lib/domain/models";
+import type { Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
 
 /** Everything the app knows. In phase 2 this moves behind the API. */
 export interface AppData {
@@ -6,6 +6,9 @@ export interface AppData {
   spaces: Space[];
   items: Item[];
   schedules: Schedule[];
+  logs: LogEntry[];
+  work: Work[];
+  contacts: Contact[];
   currentBuildingId: string | null;
   /** The date the data was loaded, used for due-date math. */
   today: ISODate;

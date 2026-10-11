@@ -29,13 +29,15 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Status colors for due dates and work states. */
+  /* Status colors for due dates; "work" marks projects and repairs on the calendar. */
   --color-overdue: var(--overdue);
   --color-overdue-soft: var(--overdue-soft);
   --color-due-soon: var(--due-soon);
   --color-due-soon-soft: var(--due-soon-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-work: var(--work);
+  --color-work-soft: var(--work-soft);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -85,6 +87,8 @@
   --due-soon-soft: #faefd4;
   --ok: #2f7a52;
   --ok-soft: #dcf0e3;
+  --work: #1d6fb8;
+  --work-soft: #dcecf9;
 
   --sidebar: #eceff4;
   --sidebar-foreground: #141b2a;
@@ -123,6 +127,8 @@
   --due-soon-soft: #3a2d10;
   --ok: #6ccf98;
   --ok-soft: #173726;
+  --work: #7cc0f5;
+  --work-soft: #13314a;
 
   --sidebar: #121925;
   --sidebar-foreground: #e3e8f0;

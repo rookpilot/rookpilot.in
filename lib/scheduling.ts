@@ -54,3 +54,18 @@ export function describeDue(nextDueOn: ISODate, today: ISODate): string {
 export function sortByDue<T extends Pick<Schedule, "nextDueOn" | "active">>(schedules: T[]): T[] {
   return schedules.filter((s) => s.active).sort((a, b) => a.nextDueOn.localeCompare(b.nextDueOn));
 }
+
+/**
+ * Where a timer lands after it's done on `doneOn`. Logging an older completion
+ * than the last one adds to history but doesn't move the timer back.
+ */
+export function afterDone(
+  schedule: Pick<Schedule, "repeat" | "lastDoneOn" | "nextDueOn">,
+  doneOn: ISODate,
+  hemisphere: Hemisphere,
+): { lastDoneOn: ISODate; nextDueOn: ISODate } {
+  if (schedule.lastDoneOn && schedule.lastDoneOn > doneOn) {
+    return { lastDoneOn: schedule.lastDoneOn, nextDueOn: schedule.nextDueOn };
+  }
+  return { lastDoneOn: doneOn, nextDueOn: computeNextDue(schedule.repeat, doneOn, hemisphere) };
+}

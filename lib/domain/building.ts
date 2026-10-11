@@ -50,3 +50,20 @@ export interface BuildingBasics {
 export function formatAddressLine(address: Address): string {
   return [address.line1, address.line2].filter(Boolean).join(", ");
 }
+
+const REQUIRED_ADDRESS_FIELDS: { field: keyof Address; message: string }[] = [
+  { field: "line1", message: "Enter the street address." },
+  { field: "city", message: "Enter the city." },
+  { field: "region", message: "Enter the state or region." },
+  { field: "postalCode", message: "Enter the ZIP or postal code." },
+  { field: "country", message: "Enter the country." },
+];
+
+/** An error message for each missing required field. */
+export function validateAddress(address: Address): Partial<Record<keyof Address, string>> {
+  const errors: Partial<Record<keyof Address, string>> = {};
+  for (const { field, message } of REQUIRED_ADDRESS_FIELDS) {
+    if (!address[field].trim()) errors[field] = message;
+  }
+  return errors;
+}

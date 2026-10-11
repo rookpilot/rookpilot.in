@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 import type { BuildingActions } from "../actions";
 import { RoomDialog } from "./dialogs/room-dialog";
-import { Pane } from "./pane";
-import { RowMenu } from "./row-menu";
+import { Pane } from "@/components/layout/pane";
+import { RowMenu } from "@/components/row-menu";
 
 interface RoomListProps {
   rooms: Space[];

@@ -7,6 +7,7 @@ import { suggestItemTemplates } from "@/lib/templates/items";
 import { suggestRooms } from "@/lib/templates/rooms";
 
 import { buildItems, type IdFactory } from "./builders";
+import { SAMPLE_CONTACTS, sampleLogs, sampleWork } from "./sample-people-and-work";
 import type { AppData } from "./types";
 
 /**
@@ -78,10 +79,13 @@ function sampleBuilding(spec: SampleBuildingSpec, today: ISODate, offsetStart: n
       ...sampleDates(schedule.repeat, today, index + offsetStart, building.hemisphere),
     }));
 
-  return { building, spaces, items, schedules };
+  return { building, spaces, items, schedules, logs: sampleLogs({ buildingId: spec.id, items, schedules, today }) };
 }
 
-/** Two example buildings: the doc's 3-bed house, and a small condo to show the building switcher. */
+/**
+ * Two example buildings (the doc's 3-bed house, and a small condo to show the building switcher),
+ * plus contacts, projects, repairs, and past completions for the house.
+ */
 export function createSampleData(today: ISODate): AppData {
   const house = sampleBuilding(
     {
@@ -118,6 +122,9 @@ export function createSampleData(today: ISODate): AppData {
     spaces: all.flatMap((b) => b.spaces),
     items: all.flatMap((b) => b.items),
     schedules: all.flatMap((b) => b.schedules),
+    logs: all.flatMap((b) => b.logs),
+    work: sampleWork({ buildingId: house.building.id, spaces: house.spaces, items: house.items, today }),
+    contacts: SAMPLE_CONTACTS,
     currentBuildingId: house.building.id,
     today,
   };

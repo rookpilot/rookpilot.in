@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeNextDue, describeDue, getDueStatus, sortByDue } from "./scheduling";
+import { afterDone, computeNextDue, describeDue, getDueStatus, sortByDue } from "./scheduling";
 
 describe("computeNextDue", () => {
   it("adds intervals, clamping month ends", () => {
@@ -55,5 +55,22 @@ describe("sortByDue", () => {
       { id: "c", nextDueOn: "2026-09-01", active: false },
     ]);
     expect(sorted.map((s) => s.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("afterDone", () => {
+  const monthly = { repeat: { kind: "interval", count: 1, unit: "month" } as const, lastDoneOn: "2026-09-01", nextDueOn: "2026-10-01" };
+
+  it("counts the next due date from when it was done", () => {
+    expect(afterDone(monthly, "2026-10-10", "north")).toEqual({ lastDoneOn: "2026-10-10", nextDueOn: "2026-11-10" });
+  });
+
+  it("doesn't move the timer back for a completion older than the last one", () => {
+    expect(afterDone(monthly, "2026-08-15", "north")).toEqual({ lastDoneOn: "2026-09-01", nextDueOn: "2026-10-01" });
+  });
+
+  it("moves seasonal tasks to the next season start", () => {
+    const fall = { repeat: { kind: "seasonal", seasons: ["fall"] } as const, lastDoneOn: null, nextDueOn: "2026-09-01" };
+    expect(afterDone(fall, "2026-10-10", "north").nextDueOn).toBe("2027-09-01");
   });
 });

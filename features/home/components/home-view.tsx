@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { NoBuilding } from "@/components/no-building";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChatPanel } from "@/features/chat/components/chat-panel";
+import { MarkDoneDialog } from "@/features/schedule/components/mark-done-dialog";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
 import { formatAddressLine } from "@/lib/domain/building";
-import { selectAgenda, selectBuildingSummary } from "@/lib/data/selectors";
+import { selectAgenda, selectBuildingSummary, type AgendaEntry } from "@/lib/data/selectors";
+import type { AppData } from "@/lib/data/types";
+import type { Building } from "@/lib/domain/models";
 
 import { NextUpList } from "./next-up-list";
 import { SummaryCards } from "./summary-cards";
@@ -20,9 +24,12 @@ export function HomeView() {
   const current = useCurrentBuilding();
   if (!current) return <HomeSkeleton />;
 
-  const { data, building } = current;
-  if (!building) return <NoBuilding />;
+  if (!current.building) return <NoBuilding />;
+  return <Home data={current.data} building={current.building} />;
+}
 
+function Home({ data, building }: { data: AppData; building: Building }) {
+  const [marking, setMarking] = useState<AgendaEntry[] | null>(null);
   const summary = selectBuildingSummary(data, building.id);
   const nextUp = selectAgenda(data, building.id).slice(0, NEXT_UP_COUNT);
 
@@ -43,10 +50,11 @@ export function HomeView() {
             Full schedule
           </Link>
         </div>
-        <NextUpList entries={nextUp} today={data.today} />
+        <NextUpList entries={nextUp} today={data.today} onMarkDone={(entry) => setMarking([entry])} />
       </section>
 
       <ChatPanel />
+      <MarkDoneDialog target={marking} onClose={() => setMarking(null)} data={data} building={building} />
     </Page>
   );
 }
@@ -61,18 +69,6 @@ function HomeSkeleton() {
         ))}
       </div>
       <Skeleton className="h-64 rounded-xl" />
-    </Page>
-  );
-}
-
-function NoBuilding() {
-  return (
-    <Page className="items-center justify-center text-center">
-      <h1 className="text-2xl font-bold">Add your first building</h1>
-      <p className="text-muted-foreground">Set up a building to start tracking its maintenance.</p>
-      <Button asChild size="lg">
-        <Link href="/onboarding">Set up a building</Link>
-      </Button>
     </Page>
   );
 }
