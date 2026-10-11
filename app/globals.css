@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, Menlo, Consolas, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Status colors for due dates and work states. */
+  --color-overdue: var(--overdue);
+  --color-overdue-soft: var(--overdue-soft);
+  --color-due-soon: var(--due-soon);
+  --color-due-soon-soft: var(--due-soon-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Brand navy comes from the Rookpilot logo; neutrals lean slightly toward it. */
+:root {
+  --radius: 0.625rem;
+
+  --background: #f4f6f9;
+  --foreground: #141b2a;
+  --card: #ffffff;
+  --card-foreground: #141b2a;
+  --popover: #ffffff;
+  --popover-foreground: #141b2a;
+  --primary: #2b4f86;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e1e9f6;
+  --secondary: #e9edf3;
+  --secondary-foreground: #141b2a;
+  --muted: #e9edf3;
+  --muted-foreground: #5a6578;
+  --accent: #e9edf3;
+  --accent-foreground: #141b2a;
+  --destructive: #c2412d;
+  --border: #d6dce5;
+  --input: #cfd6e0;
+  --ring: #2b4f86;
+
+  --overdue: #c2412d;
+  --overdue-soft: #f8e0db;
+  --due-soon: #a86d04;
+  --due-soon-soft: #faefd4;
+  --ok: #2f7a52;
+  --ok-soft: #dcf0e3;
+
+  --sidebar: #eceff4;
+  --sidebar-foreground: #141b2a;
+  --sidebar-primary: #2b4f86;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #141b2a;
+  --sidebar-border: #d6dce5;
+  --sidebar-ring: #2b4f86;
+}
+
+.dark {
+  --background: #0e131c;
+  --foreground: #e3e8f0;
+  --card: #151c28;
+  --card-foreground: #e3e8f0;
+  --popover: #151c28;
+  --popover-foreground: #e3e8f0;
+  --primary: #8eb0ea;
+  --primary-foreground: #0e1624;
+  --primary-soft: #1d2b44;
+  --secondary: #1d2533;
+  --secondary-foreground: #e3e8f0;
+  --muted: #1d2533;
+  --muted-foreground: #98a3b6;
+  --accent: #1d2533;
+  --accent-foreground: #e3e8f0;
+  --destructive: #f07a64;
+  --border: #283244;
+  --input: #2f3a4e;
+  --ring: #8eb0ea;
+
+  --overdue: #f07a64;
+  --overdue-soft: #3d1d17;
+  --due-soon: #e9b44c;
+  --due-soon-soft: #3a2d10;
+  --ok: #6ccf98;
+  --ok-soft: #173726;
+
+  --sidebar: #121925;
+  --sidebar-foreground: #e3e8f0;
+  --sidebar-primary: #8eb0ea;
+  --sidebar-primary-foreground: #0e1624;
+  --sidebar-accent: #1d2533;
+  --sidebar-accent-foreground: #e3e8f0;
+  --sidebar-border: #283244;
+  --sidebar-ring: #8eb0ea;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3 {
+    @apply font-heading;
+    text-wrap: balance;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
