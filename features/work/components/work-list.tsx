@@ -1,5 +1,6 @@
 import { EmptyState } from "@/components/empty-state";
 import { WorkStatusPill } from "@/components/work-status-pill";
+import { selectableRow } from "@/components/selectable-row";
 import { formatShortDate } from "@/lib/dates";
 import type { ISODate, Space, Work, WorkKind } from "@/lib/domain/models";
 import { isFinished, WORK_KIND_INFO } from "@/lib/domain/work";
@@ -31,7 +32,7 @@ export function WorkList({ kind, work, total, spaces, selectedId, today, onSelec
   }
 
   return (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col gap-1.5">
       {work.map((w) => {
         const selected = w.id === selectedId;
         const subtitle = [w.spaceId ? spaces.get(w.spaceId)?.name : null, rowDate(w, today)].filter(Boolean).join(" · ");
@@ -41,9 +42,9 @@ export function WorkList({ kind, work, total, spaces, selectedId, today, onSelec
               type="button"
               onClick={() => onSelect(w.id)}
               aria-current={selected ? "true" : undefined}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50",
-                selected && "border-border bg-card shadow-xs",
+              className={selectableRow(
+                selected,
+                "flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               )}
             >
               <span className="min-w-0 flex-1">

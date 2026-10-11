@@ -18,19 +18,22 @@ interface WeekCalendarProps {
 /** Seven columns on wide screens; a list of days on phones. */
 export function WeekCalendar({ anchor, today, events, onOpen }: WeekCalendarProps) {
   return (
-    <ol className="grid overflow-hidden rounded-xl border bg-card lg:grid-cols-7 lg:divide-x">
+    <ol className="grid gap-1.5 lg:grid-cols-7">
       {weekDays(anchor).map((day) => {
         const date = fromISODate(day);
         const dayEvents = events.get(day) ?? [];
         const isToday = day === today;
         return (
-          <li key={day} className="flex min-w-0 gap-3 border-b px-3 py-2.5 last:border-b-0 lg:min-h-80 lg:flex-col lg:gap-2 lg:border-b-0 lg:px-2">
-            <h3 className="flex w-12 shrink-0 flex-col items-center lg:w-auto lg:flex-row lg:justify-center lg:gap-1.5">
-              <span className="font-mono text-[11px] tracking-wide text-muted-foreground uppercase">{format(date, "EEE")}</span>
+          <li
+            key={day}
+            className={cn("flex min-w-0 gap-3 rounded-md border bg-card px-3 py-2.5 lg:min-h-80 lg:flex-col lg:gap-2 lg:px-2", isToday && "border-foreground/40")}
+          >
+            <h3 className="flex w-12 shrink-0 flex-col items-center lg:w-auto lg:flex-row lg:justify-between">
+              <span className="group-label">{format(date, "EEE")}</span>
               <span
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-                  isToday && "bg-primary text-primary-foreground",
+                  "flex h-6 min-w-7 items-center justify-center rounded-full px-1.5 font-mono text-xs text-muted-foreground",
+                  isToday && "bg-primary font-semibold text-primary-foreground",
                 )}
                 aria-current={isToday ? "date" : undefined}
               >

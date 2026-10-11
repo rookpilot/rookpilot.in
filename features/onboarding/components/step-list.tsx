@@ -28,8 +28,8 @@ export function StepList({ currentIndex, furthestIndex, canGoTo, onSelect }: Ste
                 disabled={!canGoTo(index) || isCurrent}
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                  isCurrent && "bg-card font-semibold shadow-xs ring-1 ring-border",
+                  "flex w-full items-center gap-3 rounded-md border border-transparent px-3 py-2 text-left text-sm transition-colors",
+                  isCurrent && "border-foreground/40 bg-primary-soft font-semibold",
                   !isCurrent && isReached && "hover:bg-card/70",
                   !isReached && "text-muted-foreground",
                   "disabled:cursor-default",
@@ -45,7 +45,15 @@ export function StepList({ currentIndex, furthestIndex, canGoTo, onSelect }: Ste
                   {isDone ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
                 </span>
                 <span className="flex-1">{step.label}</span>
-                {step.optional && <span className="text-xs font-normal text-muted-foreground">optional</span>}
+                <span
+                  className={cn(
+                    "rounded px-1.5 font-mono text-[10.5px] font-normal",
+                    step.optional ? "bg-due-soon-soft text-due-soon" : "bg-primary-soft text-primary",
+                    isCurrent && !step.optional && "bg-card",
+                  )}
+                >
+                  {step.optional ? "optional" : "required"}
+                </span>
               </button>
             </li>
           );

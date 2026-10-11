@@ -42,6 +42,7 @@ function Contacts({ data }: { data: AppData }) {
   return (
     <Page className="max-w-6xl">
       <PageHeader
+        eyebrow="Account"
         title="Contacts"
         description="The people who help keep your buildings running."
         actions={

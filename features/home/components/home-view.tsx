@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChatPanel } from "@/features/chat/components/chat-panel";
 import { MarkDoneDialog } from "@/features/schedule/components/mark-done-dialog";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
-import { formatAddressLine } from "@/lib/domain/building";
+import { BUILDING_TYPE_INFO, formatAddressLine } from "@/lib/domain/building";
 import { selectAgenda, selectBuildingSummary, type AgendaEntry } from "@/lib/data/selectors";
 import type { AppData } from "@/lib/data/types";
 import type { Building } from "@/lib/domain/models";
@@ -36,6 +36,7 @@ function Home({ data, building }: { data: AppData; building: Building }) {
   return (
     <Page>
       <PageHeader
+        eyebrow={BUILDING_TYPE_INFO[building.type].label}
         title={building.name}
         description={`${formatAddressLine(building.address)}, ${building.address.city}, ${building.address.region}`}
       />

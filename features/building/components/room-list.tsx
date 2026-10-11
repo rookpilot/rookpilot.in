@@ -4,14 +4,15 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Pane } from "@/components/layout/pane";
+import { RowMenu } from "@/components/row-menu";
+import { selectableRow } from "@/components/selectable-row";
 import { Button } from "@/components/ui/button";
 import type { Space } from "@/lib/domain/models";
 import { cn } from "@/lib/utils";
 
 import type { BuildingActions } from "../actions";
 import { RoomDialog } from "./dialogs/room-dialog";
-import { Pane } from "@/components/layout/pane";
-import { RowMenu } from "@/components/row-menu";
 
 interface RoomListProps {
   rooms: Space[];
@@ -40,23 +41,20 @@ export function RoomList({ rooms, itemCounts, selectedId, visibleOnMobile, onSel
         </Button>
       }
     >
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1.5">
         {rooms.map((room) => {
           const selected = room.id === selectedId;
           const count = itemCounts.get(room.id) ?? 0;
           return (
             <li
               key={room.id}
-              className={cn(
-                "group flex items-center gap-1 rounded-lg pr-1 transition-colors hover:bg-card",
-                selected && "bg-card shadow-xs ring-1 ring-border lg:ring-primary/40",
-              )}
+              className={selectableRow(selected, "group flex items-center gap-1 pr-1")}
             >
               <button
                 type="button"
                 onClick={() => onSelect(room.id)}
                 aria-current={selected ? "true" : undefined}
-                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <span className={cn("truncate", selected && "font-semibold")}>{room.name}</span>
                 <span className="font-mono text-xs text-muted-foreground tabular-nums">{count}</span>

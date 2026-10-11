@@ -4,16 +4,16 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { DuePill } from "@/components/due-pill";
+import { EmptyState } from "@/components/empty-state";
+import { Pane } from "@/components/layout/pane";
+import { selectableRow } from "@/components/selectable-row";
 import { Button } from "@/components/ui/button";
 import type { BuildingType } from "@/lib/domain/building";
 import type { ISODate, Item, Schedule, Space } from "@/lib/domain/models";
 import { sortByDue } from "@/lib/scheduling";
-import { cn } from "@/lib/utils";
 
 import type { BuildingActions } from "../actions";
 import { AddItemDialog } from "./dialogs/add-item-dialog";
-import { EmptyState } from "@/components/empty-state";
-import { Pane } from "@/components/layout/pane";
 
 interface ItemListProps {
   room: Space;
@@ -51,7 +51,7 @@ export function ItemList(props: ItemListProps) {
           No items in {room.name} yet. Add one to start its timers.
         </EmptyState>
       ) : (
-        <ul className="flex flex-col divide-y rounded-xl border bg-card">
+        <ul className="flex flex-col gap-1.5">
           {items.map((item) => {
             const schedules = schedulesByItem.get(item.id) ?? [];
             const next = sortByDue(schedules)[0];
@@ -62,9 +62,9 @@ export function ItemList(props: ItemListProps) {
                   type="button"
                   onClick={() => onSelect(item.id)}
                   aria-current={selected ? "true" : undefined}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none first:rounded-t-xl last:rounded-b-xl hover:bg-accent/60 focus-visible:ring-3 focus-visible:ring-ring/50",
-                    selected && "bg-primary-soft hover:bg-primary-soft",
+                  className={selectableRow(
+                    selected,
+                    "flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   )}
                 >
                   <span className="min-w-0 flex-1">

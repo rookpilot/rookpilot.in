@@ -37,7 +37,7 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight">{copy.title}</h1>
+        <h1 className="text-3xl font-bold tracking-[-0.02em]">{copy.title}</h1>
         <p className="text-sm text-muted-foreground">{copy.subtitle}</p>
       </div>
 

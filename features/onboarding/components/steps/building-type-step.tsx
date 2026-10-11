@@ -22,7 +22,7 @@ export function BuildingTypeStep({ value, error, onChange }: BuildingTypeStepPro
     <div className="flex flex-col gap-6">
       {GROUPS.map((group) => (
         <fieldset key={group.category} className="flex flex-col gap-3">
-          <legend className="mb-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">{group.label}</legend>
+          <legend className="group-label mb-3">{group.label}</legend>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {BUILDING_TYPES.filter((type) => BUILDING_TYPE_INFO[type].category === group.category).map((type) => {
               const info = BUILDING_TYPE_INFO[type];
@@ -33,7 +33,7 @@ export function BuildingTypeStep({ value, error, onChange }: BuildingTypeStepPro
                   className={cn(
                     "relative flex cursor-pointer flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-primary/50",
                     "has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
-                    checked && "border-primary bg-primary-soft ring-1 ring-primary",
+                    checked && "border-foreground/40 bg-primary-soft ring-1 ring-foreground/40",
                   )}
                 >
                   <input

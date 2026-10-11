@@ -56,7 +56,7 @@ export function EventChip({ event, onOpen, wrap, className }: EventChipProps) {
       aria-label={actionLabel(event)}
       onClick={() => onOpen(event)}
       className={cn(
-        "flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-left text-xs font-medium outline-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-125",
+        "flex w-full min-w-0 items-center gap-1 rounded-[3px] px-1.5 py-0.5 text-left text-[11px] font-medium outline-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-125",
         CHIP_STYLES[tone(event)],
         className,
       )}

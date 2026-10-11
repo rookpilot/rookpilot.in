@@ -59,6 +59,10 @@ Components read data through `useAppData()`. Changes go through each feature's `
 
 Each feature keeps React out of its logic. For example, onboarding has a pure reducer (`state.ts`), pure validation and totals (`selectors.ts`), one hook that wires them together (`hooks/use-onboarding.ts`), and components that only render. Logic files have tests next to them (`*.test.ts`).
 
+### Look and feel
+
+The look is plain, like Clavr: neutral grays with a near-black accent (near-white in dark mode), Bricolage Grotesque headings, Public Sans text, and JetBrains Mono labels. Color is saved for meaning: overdue, due soon, done, and projects and repairs. Every color is a token in `app/globals.css`, with a dark set under `.dark`, so components never hard-code colors. Shared pieces carry the style: `SegmentedControl` and `FilterChips`, `selectableRow` for list → detail rows, the `eyebrow` and `group-label` utilities, and `ServiceTag` for the dashed "service tag" motif.
+
 ### Next.js notes
 
 This project uses Next.js 16 with Cache Components on. Visited pages stay mounted in the background, so component state survives navigation. Forms that should start fresh need to reset their own state before navigating away; see `useAuthForm` and `useOnboarding`.

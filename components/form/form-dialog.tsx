@@ -42,7 +42,7 @@ export function DialogForm({ title, description, submitLabel, canSubmit = true, 
       }}
     >
       <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
+        <DialogTitle className="font-heading text-lg font-bold">{title}</DialogTitle>
         {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
       <div className="flex flex-col gap-4">{children}</div>

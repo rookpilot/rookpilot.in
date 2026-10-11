@@ -27,9 +27,9 @@ export function ScheduleList({ groups, spaces, today, onMarkDone }: ScheduleList
     <div className="flex flex-col gap-6">
       {groups.map((group) => (
         <section key={group.id} aria-labelledby={`group-${group.id}`} className="flex flex-col gap-2">
-          <h2 id={`group-${group.id}`} className="flex items-baseline gap-2 text-sm font-bold">
+          <h2 id={`group-${group.id}`} className="group-label flex items-baseline gap-2">
             {group.label}
-            <span className="font-mono text-xs font-normal text-muted-foreground">{group.rows.length}</span>
+            <span className="rounded-full bg-muted px-1.5 tabular-nums">{group.rows.length}</span>
           </h2>
           <ul className="flex flex-col divide-y rounded-xl border bg-card">
             {group.rows.map((row) =>

@@ -8,9 +8,9 @@ import { HistoryList } from "@/components/history-list";
 import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
 import { NoBuilding } from "@/components/no-building";
+import { FilterChips } from "@/components/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
 import { selectContacts, selectContactsById, selectHistory, selectSpaces } from "@/lib/data/selectors";
 import type { AppData } from "@/lib/data/types";
@@ -42,24 +42,16 @@ function History({ data, building }: { data: AppData; building: Building }) {
 
   return (
     <Page>
-      <PageHeader title="History" description="Everything finished in this building, newest first: tasks, repairs, and projects." />
+      <PageHeader eyebrow={building.name} title="History" description="Everything finished in this building, newest first: tasks, repairs, and projects." />
 
       <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-end">
-        <ToggleGroup
-          type="single"
-          size="sm"
-          spacing={1}
+        <FilterChips
+          label="Type"
           value={filter.kind}
-          onValueChange={(value) => value && set({ kind: value as HistoryFilter["kind"] })}
-          aria-label="Type"
-          className="flex-wrap sm:mb-0.5"
-        >
-          {KINDS.map((kind) => (
-            <ToggleGroupItem key={kind} value={kind} className="rounded-full px-3 data-[state=on]:bg-primary-soft data-[state=on]:text-primary">
-              {KIND_FILTER_LABELS[kind]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+          options={KINDS.map((kind) => ({ value: kind, label: KIND_FILTER_LABELS[kind] }))}
+          onChange={(kind) => set({ kind })}
+          className="sm:mb-1"
+        />
         <div className="grid flex-1 grid-cols-2 gap-3">
           <SelectField label="Room" value={filter.spaceId} onChange={(e) => set({ spaceId: e.target.value })}>
             <option value="">All rooms</option>
@@ -102,7 +94,7 @@ function History({ data, building }: { data: AppData; building: Building }) {
       ) : (
         groupByMonth(entries).map((month) => (
           <section key={month.label} className="flex flex-col gap-2" aria-label={month.label}>
-            <h2 className="font-mono text-xs tracking-widest text-muted-foreground uppercase">{month.label}</h2>
+            <h2 className="group-label">{month.label}</h2>
             <HistoryList
               entries={month.entries}
               today={data.today}
