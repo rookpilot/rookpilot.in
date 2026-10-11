@@ -48,18 +48,6 @@ describe("onboardingReducer", () => {
     expect(state.draft.itemsSeededFor).toEqual(["b"]);
   });
 
-  it("clears rooms and items when rooms are skipped", () => {
-    const state = onboardingReducer(withRoomsAndItems(), { type: "clearRooms" });
-    expect(state.draft.rooms).toEqual([]);
-    expect(state.draft.items).toEqual([]);
-    expect(state.draft.roomsSeeded).toBe(false);
-  });
-
-  it("unselects every item when items are skipped", () => {
-    const state = onboardingReducer(withRoomsAndItems(), { type: "clearItems" });
-    expect(state.draft.items.every((i) => !i.selected)).toBe(true);
-  });
-
   it("returns to a blank wizard on reset", () => {
     expect(onboardingReducer(withRoomsAndItems(), { type: "reset" })).toEqual(INITIAL_STATE);
   });

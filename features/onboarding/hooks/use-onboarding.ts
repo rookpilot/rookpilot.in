@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useReducer } from "react";
 
+import { dispatch as dispatchData, newId } from "@/lib/data/store";
+import { toISODate } from "@/lib/dates";
 import type { Address, BuildingBasics, BuildingType } from "@/lib/domain/building";
 import type { RoomKind } from "@/lib/domain/room";
 import { ITEM_TEMPLATES, suggestItemTemplates } from "@/lib/templates/items";
@@ -11,11 +13,11 @@ import { suggestRooms } from "@/lib/templates/rooms";
 import { hasErrors, summarize, validateStep } from "../selectors";
 import { EMPTY_BASICS, INITIAL_STATE, onboardingReducer, type ItemDraft, type OnboardingDraft, type RoomDraft } from "../state";
 import { LAST_STEP_INDEX, STEPS } from "../steps";
+import { draftToBuilding } from "../to-building";
 
-/** Where the wizard ends until Home exists (PR 2). Nothing is saved in phase 1. */
+/** Finishing opens Home for the new building. It lives in memory until phase 2 adds the API. */
 const AFTER_ONBOARDING_PATH = "/app";
 
-const newId = () => crypto.randomUUID();
 
 function suggestedRoomDrafts(draft: OnboardingDraft): RoomDraft[] {
   return suggestRooms(draft.buildingType, draft.basics).map((room) => ({ id: newId(), ...room }));
@@ -70,7 +72,10 @@ export function useOnboarding() {
     dispatch({ type: "goTo", index });
   }
 
-  function finish() {
+  /** `current` is the draft as it will be after a skip that hasn't rendered yet. */
+  function finish(current: OnboardingDraft = draft) {
+    const created = draftToBuilding(current, toISODate(new Date()), newId);
+    dispatchData({ type: "addBuilding", ...created });
     // Next.js keeps visited pages mounted (Cache Components), so start fresh
     // for the next visit instead of reopening on the last step.
     dispatch({ type: "reset" });
@@ -98,12 +103,10 @@ export function useOnboarding() {
         enterStep(stepIndex + 1, { ...draft, basics: EMPTY_BASICS });
         break;
       case "rooms":
-        dispatch({ type: "clearRooms" });
-        finish();
+        finish({ ...draft, rooms: [], items: [] });
         break;
       case "items":
-        dispatch({ type: "clearItems" });
-        finish();
+        finish({ ...draft, items: [] });
         break;
     }
   }

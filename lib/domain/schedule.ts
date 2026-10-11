@@ -5,7 +5,7 @@ export type Season = "spring" | "summer" | "fall" | "winter";
 /** How often a maintenance task repeats: a fixed interval, or at the start of given seasons. */
 export type RepeatRule =
   | { kind: "interval"; count: number; unit: IntervalUnit }
-  | { kind: "seasonal"; seasons: Season[] };
+  | { kind: "seasonal"; seasons: readonly Season[] };
 
 export interface ScheduleTemplate {
   title: string;

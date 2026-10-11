@@ -70,12 +70,10 @@ export type OnboardingAction =
   | { type: "addRoom"; room: RoomDraft }
   | { type: "updateRoom"; id: string; patch: Partial<Omit<RoomDraft, "id">> }
   | { type: "removeRoom"; id: string }
-  | { type: "clearRooms" }
   | { type: "seedItems"; items: ItemDraft[]; roomIds: string[] }
   | { type: "addItem"; item: ItemDraft }
   | { type: "updateItem"; id: string; patch: Partial<Pick<ItemDraft, "count" | "selected" | "name">> }
-  | { type: "removeItem"; id: string }
-  | { type: "clearItems" };
+  | { type: "removeItem"; id: string };
 
 function updateDraft(state: OnboardingState, patch: Partial<OnboardingDraft>): OnboardingState {
   return { ...state, draft: { ...state.draft, ...patch } };
@@ -123,8 +121,6 @@ export function onboardingReducer(state: OnboardingState, action: OnboardingActi
         items: draft.items.filter((item) => item.roomId !== action.id),
         itemsSeededFor: draft.itemsSeededFor.filter((id) => id !== action.id),
       });
-    case "clearRooms":
-      return updateDraft(state, { rooms: [], items: [], roomsSeeded: false, itemsSeededFor: [] });
 
     case "seedItems":
       return updateDraft(state, {
@@ -139,9 +135,5 @@ export function onboardingReducer(state: OnboardingState, action: OnboardingActi
       });
     case "removeItem":
       return updateDraft(state, { items: draft.items.filter((item) => item.id !== action.id) });
-    case "clearItems":
-      return updateDraft(state, {
-        items: draft.items.map((item) => ({ ...item, selected: false })),
-      });
   }
 }
