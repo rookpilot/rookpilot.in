@@ -44,7 +44,7 @@ function BuildingEditor({ data, building }: { data: AppData; building: Building 
 
   return (
     <Page className="max-w-7xl">
-      <PageHeader title="Building" description="Rooms, the things in them, and the timers that keep each one maintained." />
+      <PageHeader eyebrow={building.name} title="Building" description="Rooms, the things in them, and the timers that keep each one maintained." />
       <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,1.15fr)]">
         <RoomList
           rooms={rooms}

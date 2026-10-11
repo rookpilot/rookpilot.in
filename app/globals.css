@@ -38,6 +38,8 @@
   --color-ok-soft: var(--ok-soft);
   --color-work: var(--work);
   --color-work-soft: var(--work-soft);
+  --color-tag: var(--tag);
+  --color-tag-soft: var(--tag-soft);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -57,69 +59,76 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Brand navy comes from the Rookpilot logo; neutrals lean slightly toward it. */
+/*
+ * Plain neutral grays with a near-black accent (near-white in dark mode), like Clavr.
+ * Color is saved for meaning: overdue, due soon, done, and projects/repairs.
+ * Every color lives here; components only use these tokens.
+ */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  --background: #f4f6f9;
-  --foreground: #141b2a;
+  --background: #f7f7f6;
+  --foreground: #171717;
   --card: #ffffff;
-  --card-foreground: #141b2a;
+  --card-foreground: #171717;
   --popover: #ffffff;
-  --popover-foreground: #141b2a;
-  --primary: #2b4f86;
+  --popover-foreground: #171717;
+  --primary: #171717;
   --primary-foreground: #ffffff;
-  --primary-soft: #e1e9f6;
-  --secondary: #e9edf3;
-  --secondary-foreground: #141b2a;
-  --muted: #e9edf3;
-  --muted-foreground: #5a6578;
-  --accent: #e9edf3;
-  --accent-foreground: #141b2a;
+  --primary-soft: #efefee;
+  --secondary: #f1f1f0;
+  --secondary-foreground: #171717;
+  --muted: #f1f1f0;
+  --muted-foreground: #6b6b6b;
+  --accent: #f1f1f0;
+  --accent-foreground: #171717;
   --destructive: #c2412d;
-  --border: #d6dce5;
-  --input: #cfd6e0;
-  --ring: #2b4f86;
+  --border: #e4e4e2;
+  --input: #e4e4e2;
+  --ring: #a3a3a3;
 
   --overdue: #c2412d;
-  --overdue-soft: #f8e0db;
-  --due-soon: #a86d04;
-  --due-soon-soft: #faefd4;
+  --overdue-soft: #f8dfd9;
+  --due-soon: #b97a06;
+  --due-soon-soft: #fbefd2;
   --ok: #2f7a52;
   --ok-soft: #dcf0e3;
-  --work: #1d6fb8;
-  --work-soft: #dcecf9;
+  --work: #3c5fa8;
+  --work-soft: #dfe7f6;
+  --tag: #e7a516;
+  --tag-soft: #fbf0d3;
 
-  --sidebar: #eceff4;
-  --sidebar-foreground: #141b2a;
-  --sidebar-primary: #2b4f86;
+  --sidebar: #f1f1f0;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #171717;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #ffffff;
-  --sidebar-accent-foreground: #141b2a;
-  --sidebar-border: #d6dce5;
-  --sidebar-ring: #2b4f86;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e4e4e2;
+  --sidebar-ring: #a3a3a3;
 }
 
 .dark {
-  --background: #0e131c;
-  --foreground: #e3e8f0;
-  --card: #151c28;
-  --card-foreground: #e3e8f0;
-  --popover: #151c28;
-  --popover-foreground: #e3e8f0;
-  --primary: #8eb0ea;
-  --primary-foreground: #0e1624;
-  --primary-soft: #1d2b44;
-  --secondary: #1d2533;
-  --secondary-foreground: #e3e8f0;
-  --muted: #1d2533;
-  --muted-foreground: #98a3b6;
-  --accent: #1d2533;
-  --accent-foreground: #e3e8f0;
+  color-scheme: dark;
+  --background: #1c1c1c;
+  --foreground: #ededed;
+  --card: #232323;
+  --card-foreground: #ededed;
+  --popover: #232323;
+  --popover-foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #1c1c1c;
+  --primary-soft: #2f2f2f;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #ededed;
+  --muted: #2a2a2a;
+  --muted-foreground: #a3a3a3;
+  --accent: #2a2a2a;
+  --accent-foreground: #ededed;
   --destructive: #f07a64;
-  --border: #283244;
-  --input: #2f3a4e;
-  --ring: #8eb0ea;
+  --border: #343434;
+  --input: #3a3a3a;
+  --ring: #737373;
 
   --overdue: #f07a64;
   --overdue-soft: #3d1d17;
@@ -127,17 +136,37 @@
   --due-soon-soft: #3a2d10;
   --ok: #6ccf98;
   --ok-soft: #173726;
-  --work: #7cc0f5;
-  --work-soft: #13314a;
+  --work: #8fb0f0;
+  --work-soft: #1c2840;
+  --tag: #f0b93a;
+  --tag-soft: #3a2f12;
 
-  --sidebar: #121925;
-  --sidebar-foreground: #e3e8f0;
-  --sidebar-primary: #8eb0ea;
-  --sidebar-primary-foreground: #0e1624;
-  --sidebar-accent: #1d2533;
-  --sidebar-accent-foreground: #e3e8f0;
-  --sidebar-border: #283244;
-  --sidebar-ring: #8eb0ea;
+  --sidebar: #202020;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #ededed;
+  --sidebar-primary-foreground: #1c1c1c;
+  --sidebar-accent: #2a2a2a;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #343434;
+  --sidebar-ring: #737373;
+}
+
+/* Small mono label above a heading: "BUILDING", "WORK". */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Mono group label inside lists: "OVERDUE", "OCTOBER 2026". */
+@utility group-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
 }
 
 @layer base {
@@ -150,8 +179,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  body {
+    font-size: 15px;
+    line-height: 1.55;
+  }
   h1, h2, h3 {
     @apply font-heading;
+    line-height: 1.15;
     text-wrap: balance;
   }
   button:not(:disabled), [role="button"]:not(:disabled) {

@@ -19,8 +19,8 @@ export function AuthShowcase() {
   return (
     <div className="flex h-full flex-col justify-center gap-12 p-10 xl:p-16">
       <div className="flex max-w-md flex-col gap-3">
-        <p className="font-mono text-xs tracking-widest text-primary uppercase">Your building, on autopilot</p>
-        <h2 className="text-4xl leading-tight font-bold tracking-tight">
+        <p className="eyebrow">Your building, on autopilot</p>
+        <h2 className="text-4xl font-bold tracking-[-0.02em] xl:text-5xl">
           Every filter, alarm, and gutter on its own timer.
         </h2>
         <p className="text-muted-foreground">
@@ -30,14 +30,14 @@ export function AuthShowcase() {
 
       <ul className="flex max-w-md flex-col gap-3" aria-label="Example maintenance tasks">
         {SAMPLE_TAGS.map((tag) => (
-          <li key={tag.item} className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 shadow-xs">
+          <li key={tag.item} className="flex items-center gap-4 rounded-md border bg-card px-4 py-3">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">
                 {tag.item} <span className="font-normal text-muted-foreground">· {tag.room}</span>
               </p>
               <p className="truncate text-sm text-muted-foreground">{tag.task}</p>
             </div>
-            <span className={cn("rounded-full px-2.5 py-0.5 font-mono text-xs whitespace-nowrap", STATE_STYLES[tag.state])}>
+            <span className={cn("rounded-full px-2 py-0.5 font-mono text-[11px] whitespace-nowrap", STATE_STYLES[tag.state])}>
               {tag.when}
             </span>
           </li>

@@ -67,7 +67,7 @@ export function ContactDetail({ contact, data, onEdit, onDelete }: ContactDetail
               <dd className="min-w-0 flex-1 truncate text-sm">
                 <a
                   href={channel.href}
-                  className="text-primary hover:underline"
+                  className="underline decoration-border underline-offset-4 hover:decoration-foreground"
                   {...(channel.external ? { target: "_blank", rel: "noreferrer" } : {})}
                 >
                   {channel.value}

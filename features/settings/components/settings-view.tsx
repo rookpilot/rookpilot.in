@@ -28,7 +28,7 @@ export function SettingsView() {
 
   return (
     <Page className="max-w-4xl">
-      <PageHeader title="Settings" />
+      <PageHeader eyebrow="Account" title="Settings" />
 
       {building && (
         <Section title="This building" description={`Details for ${building.name}. Changes apply right away.`}>

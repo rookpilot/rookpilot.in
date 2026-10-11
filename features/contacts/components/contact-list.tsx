@@ -5,9 +5,9 @@ import { Search } from "lucide-react";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
+import { selectableRow } from "@/components/selectable-row";
 import { describeContact } from "@/lib/domain/contact";
 import type { Contact } from "@/lib/domain/models";
-import { cn } from "@/lib/utils";
 
 interface ContactListProps {
   contacts: Contact[];
@@ -42,7 +42,7 @@ export function ContactList({ contacts, query, onQueryChange, selectedId, onSele
       {shown.length === 0 ? (
         <EmptyState>{contacts.length === 0 ? "No contacts yet. Add the people who help with your buildings." : "No one matches that search."}</EmptyState>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-1.5">
           {shown.map((contact) => {
             const selected = contact.id === selectedId;
             return (
@@ -51,9 +51,9 @@ export function ContactList({ contacts, query, onQueryChange, selectedId, onSele
                   type="button"
                   onClick={() => onSelect(contact.id)}
                   aria-current={selected ? "true" : undefined}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 text-left outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50",
-                    selected && "border-border bg-card shadow-xs",
+                  className={selectableRow(
+                    selected,
+                    "flex w-full items-center gap-3 px-2.5 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   )}
                 >
                   <ContactAvatar contact={contact} />

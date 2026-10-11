@@ -38,13 +38,13 @@ export function WorkDetail({ work, space, item, contacts, today, onStatusChange,
 
   const where = space ? (
     <>
-      <Link href={roomHref(space.id)} className="text-primary hover:underline">
+      <Link href={roomHref(space.id)} className="underline decoration-border underline-offset-4 hover:decoration-foreground">
         {space.name}
       </Link>
       {item && (
         <>
           {" · "}
-          <Link href={itemHref(space.id, item.id)} className="text-primary hover:underline">
+          <Link href={itemHref(space.id, item.id)} className="underline decoration-border underline-offset-4 hover:decoration-foreground">
             {item.name}
           </Link>
         </>

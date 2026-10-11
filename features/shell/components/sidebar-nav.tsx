@@ -23,7 +23,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
     <nav aria-label="Main" className="flex flex-col gap-5">
       {NAV_GROUPS.map((group) => (
         <div key={group.label} className="flex flex-col gap-0.5">
-          <p className="px-2.5 pb-1 font-mono text-[11px] tracking-widest text-muted-foreground uppercase">{group.label}</p>
+          <p className="group-label px-2.5 pb-1">{group.label}</p>
           {group.items.map((item) => {
             const active = isActive(item.href, pathname);
             return (
@@ -33,8 +33,8 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-ring/50",
-                  active && "bg-sidebar-accent font-semibold shadow-xs ring-1 ring-sidebar-border",
+                  "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[14px] transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-ring/50",
+                  active && "bg-sidebar-accent font-semibold ring-1 ring-sidebar-border",
                 )}
               >
                 <item.icon className={cn("size-4", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />

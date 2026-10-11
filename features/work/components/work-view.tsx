@@ -8,9 +8,9 @@ import { EmptyState } from "@/components/empty-state";
 import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
 import { NoBuilding } from "@/components/no-building";
+import { FilterChips } from "@/components/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
 import { useSelectedId } from "@/hooks/use-selected-id";
 import { selectContacts, selectSpaces, selectWork } from "@/lib/data/selectors";
@@ -61,6 +61,7 @@ function WorkPage({ kind, data, building }: { kind: WorkKind; data: AppData; bui
   return (
     <Page className="max-w-6xl">
       <PageHeader
+        eyebrow={`Work · ${building.name}`}
         title={info.plural}
         description={DESCRIPTIONS[kind]}
         actions={
@@ -72,21 +73,12 @@ function WorkPage({ kind, data, building }: { kind: WorkKind; data: AppData; bui
       />
       <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className={cn("flex-col gap-3", selected ? "hidden lg:flex" : "flex")}>
-          <ToggleGroup
-            type="single"
-            size="sm"
-            spacing={1}
+          <FilterChips
+            label="Filter by status"
             value={filter}
-            onValueChange={(value) => value && setFilter(value as Filter)}
-            aria-label="Filter by status"
-            className="flex-wrap"
-          >
-            {(["all", ...info.statuses] as const).map((status) => (
-              <ToggleGroupItem key={status} value={status} className="rounded-full px-3 data-[state=on]:bg-primary-soft data-[state=on]:text-primary">
-                {status === "all" ? "All" : WORK_STATUS_LABELS[status]}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            options={(["all", ...info.statuses] as const).map((status) => ({ value: status, label: status === "all" ? "All" : WORK_STATUS_LABELS[status] }))}
+            onChange={setFilter}
+          />
           <WorkList
             kind={kind}
             work={shownList}

@@ -29,10 +29,11 @@ export function MonthCalendar({ anchor, today, events, onOpen, onShowDay }: Mont
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card" role="grid" aria-label={format(fromISODate(anchor), "MMMM yyyy")}>
-      <div role="row" className="grid grid-cols-7 border-b bg-muted/40">
+      <div role="row" className="grid grid-cols-7 divide-x border-b bg-muted">
         {weekDays(weeks[0][0]).map((day) => (
-          <span key={day} role="columnheader" className="py-1.5 text-center font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            <span aria-hidden="true">{format(fromISODate(day), "EEEEE")}</span>
+          <span key={day} role="columnheader" className="group-label px-1.5 py-1 text-center sm:text-left">
+            <span aria-hidden="true" className="sm:hidden">{format(fromISODate(day), "EEEEE")}</span>
+            <span aria-hidden="true" className="hidden sm:inline">{format(fromISODate(day), "EEE")}</span>
             <span className="sr-only">{format(fromISODate(day), "EEEE")}</span>
           </span>
         ))}
@@ -71,15 +72,15 @@ function DayCell({ day, inMonth, isToday, events, onOpen, onShowDay }: DayCellPr
   const dayLabel = `${format(date, "EEEE, MMMM d")}, ${events.length === 0 ? "nothing due" : `${events.length} ${events.length === 1 ? "entry" : "entries"}`}`;
 
   return (
-    <div role="gridcell" className={cn("flex min-h-16 min-w-0 flex-col gap-1 p-1 sm:min-h-28 sm:p-1.5", !inMonth && "bg-muted/30")}>
+    <div role="gridcell" className={cn("flex min-h-16 min-w-0 flex-col gap-1 bg-card p-1 sm:min-h-28 sm:p-1.5", !inMonth && "bg-background")}>
       <button
         type="button"
         onClick={() => onShowDay(day)}
         aria-label={`Show the week of ${dayLabel}`}
         className={cn(
-          "flex size-6 items-center justify-center self-center rounded-full text-xs font-semibold outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 sm:self-start",
-          !inMonth && "text-muted-foreground",
-          isToday && "bg-primary text-primary-foreground hover:bg-primary/90",
+          "flex h-5 min-w-6 items-center justify-center self-center rounded-full px-1.5 font-mono text-[11px] text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 sm:self-start",
+          !inMonth && "opacity-50",
+          isToday && "bg-primary font-semibold text-primary-foreground opacity-100 hover:bg-primary/90",
         )}
       >
         {format(date, "d")}

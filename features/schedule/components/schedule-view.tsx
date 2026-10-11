@@ -7,12 +7,12 @@ import { useState } from "react";
 import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
 import { NoBuilding } from "@/components/no-building";
+import { SegmentedControl } from "@/components/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { itemHref } from "@/features/building/routes";
 import { useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
-import { CALENDAR_VIEWS, isCalendarView, rangeLabel, shiftAnchor, visibleRange, type CalendarView } from "@/lib/calendar";
+import { CALENDAR_VIEWS, rangeLabel, shiftAnchor, visibleRange, type CalendarView } from "@/lib/calendar";
 import { selectSpaces, type AgendaEntry } from "@/lib/data/selectors";
 import type { AppData } from "@/lib/data/types";
 import type { Building } from "@/lib/domain/models";
@@ -53,23 +53,16 @@ function Schedule({ data, building }: { data: AppData; building: Building }) {
   return (
     <Page className="max-w-7xl">
       <PageHeader
+        eyebrow={building.name}
         title="Schedule"
         description="Every timer in this building. Mark a task done to reset its timer."
         actions={
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={0}
+          <SegmentedControl
+            label="View"
             value={view}
-            onValueChange={(value) => isCalendarView(value) && setView(value)}
-            aria-label="View"
-          >
-            {CALENDAR_VIEWS.map((v) => (
-              <ToggleGroupItem key={v} value={v} className="px-3 data-[state=on]:bg-primary-soft data-[state=on]:text-primary">
-                {VIEW_LABELS[v]}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            options={CALENDAR_VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))}
+            onChange={setView}
+          />
         }
       />
 

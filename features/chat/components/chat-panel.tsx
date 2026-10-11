@@ -15,7 +15,7 @@ export function ChatPanel() {
 
   return (
     <section aria-label="Chat with Rookpilot" className="flex flex-col gap-3">
-      <div className="flex min-h-48 flex-col justify-end gap-3 rounded-2xl border bg-muted/40 p-4" aria-live="polite">
+      <div className="flex min-h-48 flex-col justify-end gap-3 rounded-lg border border-dashed bg-card p-4" aria-live="polite">
         {messages.length === 0 ? (
           <div className="flex flex-col items-start gap-3">
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -28,7 +28,7 @@ export function ChatPanel() {
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-full border bg-card px-3 py-1 text-xs hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="rounded-full border bg-card px-3 py-1 text-[13px] hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {s}
                 </button>
@@ -40,8 +40,8 @@ export function ChatPanel() {
             <p
               key={m.id}
               className={cn(
-                "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
-                m.role === "user" ? "self-end bg-primary text-primary-foreground" : "self-start bg-card text-muted-foreground ring-1 ring-border",
+                "max-w-[78%] rounded-xl px-3 py-2 text-sm",
+                m.role === "user" ? "self-end bg-primary text-primary-foreground" : "self-start bg-muted text-muted-foreground italic",
               )}
             >
               {m.text}

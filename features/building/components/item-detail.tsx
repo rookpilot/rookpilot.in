@@ -5,6 +5,9 @@ import { useId, useState } from "react";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DuePill } from "@/components/due-pill";
+import { EmptyState } from "@/components/empty-state";
+import { Pane } from "@/components/layout/pane";
+import { RowMenu } from "@/components/row-menu";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatShortDate } from "@/lib/dates";
@@ -15,9 +18,6 @@ import { formatMoney } from "@/lib/money";
 import type { BuildingActions } from "../actions";
 import { ItemDetailsDialog } from "./dialogs/item-details-dialog";
 import { ScheduleDialog } from "./dialogs/schedule-dialog";
-import { Pane } from "@/components/layout/pane";
-import { EmptyState } from "@/components/empty-state";
-import { RowMenu } from "@/components/row-menu";
 
 interface ItemDetailProps {
   item: Item | null;

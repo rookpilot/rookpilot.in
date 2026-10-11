@@ -46,13 +46,13 @@ export function OnboardingWizard() {
         <main className="flex min-w-0 flex-col gap-6">
           <Progress value={progress} className="lg:hidden" aria-label="Onboarding progress" />
 
-          <div className="flex flex-col gap-6 rounded-2xl border bg-card p-5 shadow-xs sm:p-8">
+          <div className="flex flex-col gap-6 rounded-xl border bg-card p-5 sm:p-8">
             <div className="flex flex-col gap-1.5">
-              <p className="font-mono text-xs tracking-widest text-primary uppercase">
+              <p className="eyebrow">
                 {step.label}
                 {step.optional && <span className="text-muted-foreground"> · optional</span>}
               </p>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{step.title}</h1>
+              <h1 className="text-2xl font-bold tracking-[-0.02em] sm:text-3xl">{step.title}</h1>
               <p className="text-sm text-muted-foreground">{step.description}</p>
             </div>
 

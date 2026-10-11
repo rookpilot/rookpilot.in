@@ -90,7 +90,7 @@ function ScheduleFormBody({ schedule, onSave }: Pick<ScheduleDialogProps, "sched
               key={option.value}
               className={cn(
                 "flex cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-center text-sm has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
-                kind === option.value && "border-primary bg-primary-soft font-medium",
+                kind === option.value && "border-foreground/40 bg-primary-soft font-medium",
               )}
             >
               <input

@@ -24,7 +24,7 @@ export function BuildingSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-lg border bg-card px-2.5 py-2 text-left shadow-xs outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
+      <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-md border bg-card px-2.5 py-2 text-left outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
         {building && (
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
             <BuildingTypeIcon type={building.type} className="size-4" />

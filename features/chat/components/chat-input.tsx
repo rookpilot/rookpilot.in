@@ -26,7 +26,7 @@ export function ChatInput({ onSend, placeholder = "Tell Rookpilot what happenedâ
         e.preventDefault();
         submit();
       }}
-      className="flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-xs focus-within:ring-3 focus-within:ring-ring/50"
+      className="flex items-end gap-2 rounded-3xl border bg-card py-1.5 pr-1.5 pl-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
     >
       <label htmlFor="chat-input" className="sr-only">
         Message Rookpilot

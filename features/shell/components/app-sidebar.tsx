@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
+import { ServiceTag } from "@/components/service-tag";
 
 import { BuildingSwitcher } from "./building-switcher";
 import { SidebarNav } from "./sidebar-nav";
@@ -14,6 +15,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex-1 overflow-y-auto">
         <SidebarNav onNavigate={onNavigate} />
       </div>
+      <ServiceTag>Sample data · not saved</ServiceTag>
       <Link
         href="/login"
         className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
