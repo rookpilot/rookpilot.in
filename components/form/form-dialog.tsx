@@ -16,7 +16,7 @@ interface FormDialogProps {
 export function FormDialog({ open, onOpenChange, children }: FormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">{children}</DialogContent>
+      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md">{children}</DialogContent>
     </Dialog>
   );
 }

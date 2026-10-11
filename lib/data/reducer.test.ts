@@ -68,6 +68,22 @@ describe("sample data", () => {
     expect(data.schedules.filter((s) => elmItemIds.has(s.itemId))).toHaveLength(36);
   });
 
+  it("tags only real contacts and links the house's work to its rooms", () => {
+    const data = createSampleData(TODAY);
+    const contactIds = new Set(data.contacts.map((c) => c.id));
+    const tags = [...data.logs, ...data.work].flatMap((entry) => entry.contactIds);
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags.every((id) => contactIds.has(id))).toBe(true);
+    expect(data.work.every((w) => w.spaceId !== null)).toBe(true);
+  });
+
+  it("logs each recent completion once", () => {
+    const data = createSampleData(TODAY);
+    expect(data.logs.length).toBeGreaterThan(20);
+    expect(data.logs.every((log) => log.doneOn <= TODAY)).toBe(true);
+    expect(new Set(data.logs.map((log) => log.scheduleId)).size).toBe(data.logs.length);
+  });
+
   it("has unique ids and a mix of overdue and upcoming timers", () => {
     const data = createSampleData(TODAY);
     const allIds = [...data.spaces, ...data.items, ...data.schedules].map((e) => e.id);
@@ -95,11 +111,75 @@ describe("dataReducer", () => {
     expect(next.schedules.some((s) => kitchenItemIds.has(s.itemId))).toBe(false);
   });
 
-  it("deletes an item's timers along with the item", () => {
+  it("keeps work in a deleted room but unlinks it", () => {
+    const data = createSampleData(TODAY);
+    const garage = data.work.find((w) => w.id === "work-garage-door")!;
+    const next = dataReducer(data, { type: "deleteSpace", id: garage.spaceId! });
+    expect(next.work.find((w) => w.id === garage.id)).toMatchObject({ spaceId: null, itemId: null });
+  });
+
+  it("deletes an item's timers and history along with the item", () => {
     const data = createSampleData(TODAY);
     const item = data.items[0];
+    expect(data.logs.some((log) => log.itemId === item.id)).toBe(true);
     const next = dataReducer(data, { type: "deleteItem", id: item.id });
     expect(next.schedules.some((s) => s.itemId === item.id)).toBe(false);
+    expect(next.logs.some((log) => log.itemId === item.id)).toBe(false);
+  });
+
+  it("moves linked work with an item to its new room", () => {
+    const data = createSampleData(TODAY);
+    const garage = data.work.find((w) => w.id === "work-garage-door")!;
+    const kitchen = data.spaces.find((s) => s.buildingId === "elm" && s.kind === "kitchen")!;
+    const next = dataReducer(data, { type: "updateItem", id: garage.itemId!, patch: { spaceId: kitchen.id } });
+    expect(next.work.find((w) => w.id === garage.id)?.spaceId).toBe(kitchen.id);
+  });
+
+  it("keeps history when a timer is deleted", () => {
+    const data = createSampleData(TODAY);
+    const log = data.logs[0];
+    const next = dataReducer(data, { type: "deleteSchedule", id: log.scheduleId! });
+    expect(next.logs.find((l) => l.id === log.id)?.scheduleId).toBeNull();
+  });
+
+  it("logs a completion and moves the timer in one step", () => {
+    const data = createSampleData(TODAY);
+    const schedule = data.schedules[0];
+    const item = data.items.find((i) => i.id === schedule.itemId)!;
+    const next = dataReducer(data, {
+      type: "completeSchedules",
+      completions: [
+        {
+          log: { id: "done-1", buildingId: "elm", itemId: item.id, scheduleId: schedule.id, title: schedule.title, doneOn: TODAY, note: "", cost: 6, contactIds: [] },
+          lastDoneOn: TODAY,
+          nextDueOn: "2027-01-10",
+        },
+      ],
+    });
+    expect(next.logs.at(-1)?.id).toBe("done-1");
+    expect(next.schedules[0]).toMatchObject({ lastDoneOn: TODAY, nextDueOn: "2027-01-10" });
+  });
+
+  it("removes a deleted contact's tags but keeps the work", () => {
+    const data = createSampleData(TODAY);
+    const next = dataReducer(data, { type: "deleteContact", id: "contact-dana" });
+    expect(next.contacts.some((c) => c.id === "contact-dana")).toBe(false);
+    expect(next.work).toHaveLength(data.work.length);
+    expect([...next.work, ...next.logs].some((entry) => entry.contactIds.includes("contact-dana"))).toBe(false);
+  });
+
+  it("deletes a building with everything in it and selects another", () => {
+    const data = createSampleData(TODAY);
+    const next = dataReducer(data, { type: "deleteBuilding", id: "elm" });
+    expect(next.currentBuildingId).toBe("pearl");
+    for (const list of [next.spaces, next.items, next.logs, next.work]) {
+      expect(list.some((entry) => entry.buildingId === "elm")).toBe(false);
+    }
+    const itemIds = new Set(next.items.map((i) => i.id));
+    expect(next.schedules.every((s) => itemIds.has(s.itemId))).toBe(true);
+    expect(next.contacts).toHaveLength(data.contacts.length);
+
+    expect(dataReducer(next, { type: "deleteBuilding", id: "pearl" }).currentBuildingId).toBeNull();
   });
 
   it("selects a newly added building and ignores unknown ids", () => {

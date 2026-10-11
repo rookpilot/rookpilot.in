@@ -15,7 +15,7 @@ interface PaneProps {
   children: React.ReactNode;
 }
 
-/** One column of the Building tab. */
+/** One column of a list → detail layout, like the Building tab. On phones only the front pane shows. */
 export function Pane({ title, subtitle, visibleOnMobile, onBack, backLabel, action, className, children }: PaneProps) {
   return (
     <section

@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ComingSoon } from "@/features/shell/components/coming-soon";
+import { ContactsSkeleton, ContactsView } from "@/features/contacts/components/contacts-view";
 
 export const metadata: Metadata = { title: "Contacts" };
 
 export default function ContactsPage() {
-  return <ComingSoon title="Contacts" description="The people who help keep your buildings running, what you like them for, and what they've helped with." arrivesIn="PR 4" />;
+  // The open contact comes from the URL, which is only known in the browser.
+  return (
+    <Suspense fallback={<ContactsSkeleton />}>
+      <ContactsView />
+    </Suspense>
+  );
 }

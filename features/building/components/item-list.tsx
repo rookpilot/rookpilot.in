@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 
 import type { BuildingActions } from "../actions";
 import { AddItemDialog } from "./dialogs/add-item-dialog";
-import { Pane } from "./pane";
+import { EmptyState } from "@/components/empty-state";
+import { Pane } from "@/components/layout/pane";
 
 interface ItemListProps {
   room: Space;
@@ -46,9 +47,9 @@ export function ItemList(props: ItemListProps) {
       }
     >
       {items.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <EmptyState>
           No items in {room.name} yet. Add one to start its timers.
-        </p>
+        </EmptyState>
       ) : (
         <ul className="flex flex-col divide-y rounded-xl border bg-card">
           {items.map((item) => {

@@ -1,12 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { DialogForm, FormDialog } from "@/components/form/form-dialog";
 import { FormField } from "@/components/form/form-field";
 import { SelectField } from "@/components/form/select-field";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaField } from "@/components/form/textarea-field";
 import type { Item, Space } from "@/lib/domain/models";
 
 type ItemDetails = Pick<Item, "name" | "spaceId" | "brand" | "model" | "installedOn" | "notes">;
@@ -43,7 +42,6 @@ function ItemDetailsForm({ item, rooms, onSave }: Pick<ItemDetailsDialogProps, "
     installedOn: item.installedOn,
     notes: item.notes,
   });
-  const notesId = useId();
   const set = (patch: Partial<ItemDetails>) => setDetails((prev) => ({ ...prev, ...patch }));
 
   return (
@@ -72,12 +70,7 @@ function ItemDetailsForm({ item, rooms, onSave }: Pick<ItemDetailsDialogProps, "
         value={details.installedOn ?? ""}
         onChange={(e) => set({ installedOn: e.target.value || null })}
       />
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={notesId}>
-          Notes <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Textarea id={notesId} rows={3} value={details.notes} onChange={(e) => set({ notes: e.target.value })} />
-      </div>
+      <TextareaField label="Notes" optional value={details.notes} onChange={(e) => set({ notes: e.target.value })} />
     </DialogForm>
   );
 }

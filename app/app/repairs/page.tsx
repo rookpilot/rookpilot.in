@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ComingSoon } from "@/features/shell/components/coming-soon";
+import { WorkSkeleton, WorkView } from "@/features/work/components/work-view";
 
 export const metadata: Metadata = { title: "Repairs" };
 
 export default function RepairsPage() {
-  return <ComingSoon title="Repairs" description="Things that broke and how they got fixed. Track cost, DIY or hired, and who helped." arrivesIn="PR 5" />;
+  // The open repair comes from the URL, which is only known in the browser.
+  return (
+    <Suspense fallback={<WorkSkeleton />}>
+      <WorkView kind="repair" />
+    </Suspense>
+  );
 }

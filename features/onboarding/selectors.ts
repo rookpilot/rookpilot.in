@@ -1,26 +1,10 @@
-import type { Address } from "@/lib/domain/building";
+import { validateAddress } from "@/lib/domain/building";
 import { getItemTemplate } from "@/lib/templates/items";
 
 import type { OnboardingDraft } from "./state";
 import type { StepId } from "./steps";
 
 export type StepErrors = Record<string, string>;
-
-const REQUIRED_ADDRESS_FIELDS: { field: keyof Address; message: string }[] = [
-  { field: "line1", message: "Enter the street address." },
-  { field: "city", message: "Enter the city." },
-  { field: "region", message: "Enter the state or region." },
-  { field: "postalCode", message: "Enter the ZIP or postal code." },
-  { field: "country", message: "Enter the country." },
-];
-
-function validateAddress(address: Address): StepErrors {
-  const errors: StepErrors = {};
-  for (const { field, message } of REQUIRED_ADDRESS_FIELDS) {
-    if (!address[field].trim()) errors[field] = message;
-  }
-  return errors;
-}
 
 function validateRooms(draft: OnboardingDraft): StepErrors {
   const errors: StepErrors = {};
