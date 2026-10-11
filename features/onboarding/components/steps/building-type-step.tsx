@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { BUILDING_TYPE_INFO, BUILDING_TYPES, type BuildingCategory, type BuildingType } from "@/lib/domain/building";
 import { cn } from "@/lib/utils";
 
-import { BuildingTypeIcon } from "../building-type-icon";
+import { BuildingTypeIcon } from "@/components/building-type-icon";
 
 interface BuildingTypeStepProps {
   value: BuildingType | null;
