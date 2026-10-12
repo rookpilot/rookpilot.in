@@ -44,7 +44,7 @@ function History({ data, building }: { data: AppData; building: Building }) {
     <Page>
       <PageHeader eyebrow={building.name} title="History" description="Everything finished in this building, newest first: tasks, repairs, and projects." />
 
-      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-end">
+      <div className="flex flex-col gap-3 surface p-3 sm:flex-row sm:items-end">
         <FilterChips
           label="Type"
           value={filter.kind}

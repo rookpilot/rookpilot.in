@@ -17,3 +17,13 @@ export function Logo({ className, href = "/" }: LogoProps) {
     </Link>
   );
 }
+
+/** Just the rook icon from the wordmark, for tight spaces like the collapsed sidebar. */
+export function LogoMark({ className, href = "/" }: LogoProps) {
+  return (
+    <Link href={href} aria-label="Rookpilot home" className={cn("inline-flex h-7 w-[26px] shrink-0 overflow-hidden", className)}>
+      <Image src="/brand/logo-light.png" alt="" width={974} height={240} className="h-full w-auto max-w-none dark:hidden" />
+      <Image src="/brand/logo-dark.png" alt="" width={974} height={240} className="hidden h-full w-auto max-w-none dark:block" />
+    </Link>
+  );
+}

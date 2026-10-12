@@ -70,11 +70,11 @@ function TotalsBar({ totals }: { totals: OnboardingTotals }) {
     { label: "Timers", value: totals.timers },
   ];
   return (
-    <dl className="grid grid-cols-3 gap-3 rounded-xl bg-muted/60 p-4">
+    <dl className="flex flex-wrap gap-2">
       {stats.map((stat) => (
-        <div key={stat.label} className="flex flex-col">
-          <dt className="text-xs text-muted-foreground">{stat.label}</dt>
-          <dd className="font-heading text-2xl font-bold tabular-nums">{stat.value}</dd>
+        <div key={stat.label} className="flex items-baseline gap-1.5 rounded-full bg-muted px-3.5 py-1.5">
+          <dd className="font-heading text-lg font-bold tabular-nums">{stat.value}</dd>
+          <dt className="text-sm text-muted-foreground">{stat.label.toLowerCase()}</dt>
         </div>
       ))}
     </dl>
@@ -97,14 +97,14 @@ function RoomItems({ room, items, onToggle, onCountChange, onRemove, onAdd }: Ro
   }
 
   return (
-    <section className="flex flex-col gap-2" aria-labelledby={`${inputId}-heading`}>
+    <section className="flex flex-col gap-3 p-4 surface sm:p-5" aria-labelledby={`${inputId}-heading`}>
       <h3 id={`${inputId}-heading`} className="flex items-baseline gap-2 text-base font-bold">
         {room.name || "Unnamed room"}
         <span className="font-sans text-xs font-normal text-muted-foreground">{ROOM_KIND_LABELS[room.kind]}</span>
       </h3>
 
       {items.length > 0 && (
-        <ul className="flex flex-col divide-y rounded-xl border bg-card">
+        <ul className="-mx-2 flex flex-col">
           {items.map((item) => (
             <ItemRow key={item.id} item={item} onToggle={onToggle} onCountChange={onCountChange} onRemove={onRemove} />
           ))}
@@ -117,11 +117,11 @@ function RoomItems({ room, items, onToggle, onCountChange, onRemove, onAdd }: Ro
           list={TEMPLATE_LIST_ID}
           aria-label={`Add an item to ${room.name || "this room"}`}
           placeholder="Add an item, like Ceiling fan"
-          className="h-9 flex-1"
+          className="h-10 flex-1 rounded-full bg-muted/50 px-4"
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
         />
-        <Button type="submit" variant="outline" disabled={!newItem.trim()}>
+        <Button type="submit" variant="outline" size="lg" className="rounded-full" disabled={!newItem.trim()}>
           <Plus data-icon="inline-start" />
           Add
         </Button>
@@ -143,7 +143,7 @@ function ItemRow({ item, onToggle, onCountChange, onRemove }: ItemRowProps) {
   const caption = template ? formatSchedules(template.schedules) : "Custom item. Add timers later.";
 
   return (
-    <li className="flex items-center gap-3 px-3 py-2.5">
+    <li className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/60">
       <Checkbox id={checkboxId} checked={item.selected} onCheckedChange={(checked) => onToggle(item.id, checked === true)} />
       <label htmlFor={checkboxId} className={cn("min-w-0 flex-1 cursor-pointer", !item.selected && "opacity-60")}>
         <span className="block truncate text-sm font-medium">{item.name}</span>

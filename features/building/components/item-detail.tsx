@@ -83,7 +83,7 @@ export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleO
         </div>
       }
     >
-      <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
+      <div className="flex flex-col gap-4 surface p-4">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {details.map((d) => (
             <div key={d.label} className="min-w-0">
@@ -108,7 +108,7 @@ export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleO
           No timers yet. Add one, like &ldquo;Clean every 6 months&rdquo;.
         </EmptyState>
       ) : (
-        <ul className="flex flex-col divide-y rounded-xl border bg-card">
+        <ul className="flex flex-col divide-y overflow-hidden surface">
           {schedules.map((schedule) => (
             <ScheduleRow
               key={schedule.id}
@@ -127,7 +127,7 @@ export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleO
       {logs.length === 0 ? (
         <EmptyState>Nothing done yet. Mark a timer done and it shows up here.</EmptyState>
       ) : (
-        <ul className="flex flex-col divide-y rounded-xl border bg-card">
+        <ul className="flex flex-col divide-y overflow-hidden surface">
           {logs.map((log) => (
             <li key={log.id} className="flex items-baseline gap-3 px-3 py-2 text-sm">
               <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">{formatShortDate(log.doneOn, today)}</span>

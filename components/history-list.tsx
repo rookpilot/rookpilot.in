@@ -25,7 +25,7 @@ interface HistoryListProps {
 /** Rows of finished (or tagged) tasks, repairs, and projects. Used by History and a contact's "Helped with". */
 export function HistoryList({ entries, today, contactsById, describe, href, onFollow, showContacts = true, inMonthGroups = false }: HistoryListProps) {
   return (
-    <ul className="flex flex-col divide-y rounded-xl border bg-card">
+    <ul className="flex flex-col divide-y overflow-hidden surface">
       {entries.map((entry) => {
         const cost = historyCost(entry);
         const contacts = historyContactIds(entry)

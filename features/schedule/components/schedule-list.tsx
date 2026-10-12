@@ -31,7 +31,7 @@ export function ScheduleList({ groups, spaces, today, onMarkDone }: ScheduleList
             {group.label}
             <span className="rounded-full bg-muted px-1.5 tabular-nums">{group.rows.length}</span>
           </h2>
-          <ul className="flex flex-col divide-y rounded-xl border bg-card">
+          <ul className="flex flex-col divide-y overflow-hidden surface">
             {group.rows.map((row) =>
               row.type === "task" ? (
                 <TaskRow key={row.entry.schedule.id} entry={row.entry} today={today} onMarkDone={onMarkDone} />

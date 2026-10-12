@@ -68,7 +68,7 @@ export function BuildingForm({ building, onSave }: BuildingFormProps) {
         setSaved(true);
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormField label="Name" value={name} error={showErrors ? nameError : undefined} onChange={(e) => setName(e.target.value)} />
         <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value as BuildingType)}>
           {BUILDING_TYPES.map((t) => (
@@ -81,7 +81,7 @@ export function BuildingForm({ building, onSave }: BuildingFormProps) {
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-bold">Address</legend>
-        <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
           <FormField label="Street address" autoComplete="address-line1" value={address.line1} error={shown.line1} onChange={(e) => setAddr({ line1: e.target.value })} />
           <FormField label="Apt, suite, unit" optional autoComplete="address-line2" value={address.line2} onChange={(e) => setAddr({ line2: e.target.value })} />
         </div>

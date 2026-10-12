@@ -95,7 +95,7 @@ export function WorkDetail({ work, space, item, contacts, today, onStatusChange,
         )}
       </div>
 
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-3 surface p-4 text-sm sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label} className="min-w-0">
             <dt className="text-xs text-muted-foreground">{row.label}</dt>

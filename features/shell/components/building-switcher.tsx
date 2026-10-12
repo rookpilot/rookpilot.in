@@ -3,6 +3,7 @@
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import Link from "next/link";
 
+import { BuildingTypeIcon } from "@/components/building-type-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,31 +13,42 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BuildingTypeIcon } from "@/components/building-type-icon";
+import { cn } from "@/lib/utils";
 
 import { selectBuilding, useCurrentBuilding } from "../hooks/use-current-building";
 
-export function BuildingSwitcher() {
+export function BuildingSwitcher({ collapsed = false }: { collapsed?: boolean }) {
   const current = useCurrentBuilding();
-  if (!current) return <Skeleton className="h-12 w-full rounded-lg" />;
+  if (!current) return <Skeleton className={collapsed ? "mx-auto size-10 rounded-lg" : "h-12 w-full rounded-lg"} />;
 
   const { data, building } = current;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-md border bg-card px-2.5 py-2 text-left outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
+      <DropdownMenuTrigger
+        aria-label={collapsed ? `Building: ${building?.name ?? "none"}` : undefined}
+        title={collapsed ? building?.name : undefined}
+        className={cn(
+          "flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent text-left shadow-xs outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
+          collapsed ? "mx-auto size-10 justify-center p-0" : "w-full px-2 py-2",
+        )}
+      >
         {building && (
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
             <BuildingTypeIcon type={building.type} className="size-4" />
           </span>
         )}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">{building?.name ?? "No building"}</span>
-          <span className="block truncate text-xs text-muted-foreground">{building?.address.city}</span>
-        </span>
-        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        {!collapsed && (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{building?.name ?? "No building"}</span>
+              <span className="block truncate text-xs text-muted-foreground">{building?.address.city}</span>
+            </span>
+            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-60">
+      <DropdownMenuContent align="start" side={collapsed ? "right" : "bottom"} className="min-w-60">
         <DropdownMenuLabel>Your buildings</DropdownMenuLabel>
         {data.buildings.map((b) => (
           <DropdownMenuItem key={b.id} onSelect={() => selectBuilding(b.id)}>

@@ -1,11 +1,15 @@
 "use client";
 
+import { X } from "lucide-react";
+import { useState } from "react";
+
 import { Logo } from "@/components/brand/logo";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { useOnboarding, type OnboardingController } from "../hooks/use-onboarding";
 import { STEPS } from "../steps";
-import { StepList } from "./step-list";
+import { BUBBLE_AVOID_ATTRIBUTE, FloatingBubbles } from "./floating-bubbles";
 import { AddressStep } from "./steps/address-step";
 import { BasicsStep } from "./steps/basics-step";
 import { BuildingTypeStep } from "./steps/building-type-step";
@@ -15,61 +19,77 @@ import { WizardFooter } from "./wizard-footer";
 
 const SKIP_LABELS: Partial<Record<(typeof STEPS)[number]["id"], string>> = {
   basics: "Skip",
-  rooms: "Skip rooms and items",
+  rooms: "Skip rooms",
   items: "Skip items",
 };
 
+/** One full screen per step. Steps slide in from the side they come from. */
 export function OnboardingWizard() {
   const wizard = useOnboarding();
   const { step, stepIndex } = wizard;
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+
+  // Which way we moved, so the next step slides in from the right side (React's "store the previous value" pattern).
+  const [shown, setShown] = useState({ index: stepIndex, direction: 1 });
+  if (shown.index !== stepIndex) setShown({ index: stepIndex, direction: stepIndex > shown.index ? 1 : -1 });
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-8">
+    <div className="relative isolate flex min-h-svh flex-col bg-background">
+      <FloatingBubbles />
+      <header className="relative z-20 flex h-16 items-center justify-between px-4 sm:px-8">
         <Logo href="/signup" />
-        <span className="font-mono text-xs text-muted-foreground">
-          Step {stepIndex + 1} of {STEPS.length}
-        </span>
+        <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" aria-label="Exit setup" onClick={wizard.exit}>
+          <X />
+        </Button>
       </header>
 
-      <div className="mx-auto grid w-full max-w-5xl flex-1 gap-8 px-4 py-6 sm:py-10 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="hidden lg:block">
-          <StepList
-            currentIndex={stepIndex}
-            furthestIndex={wizard.furthestIndex}
-            canGoTo={wizard.canGoTo}
-            onSelect={wizard.goTo}
-          />
-        </aside>
-
-        <main className="flex min-w-0 flex-col gap-6">
-          <Progress value={progress} className="lg:hidden" aria-label="Onboarding progress" />
-
-          <div className="flex flex-col gap-6 rounded-xl border bg-card p-5 sm:p-8">
-            <div className="flex flex-col gap-1.5">
-              <p className="eyebrow">
-                {step.label}
-                {step.optional && <span className="text-muted-foreground"> · optional</span>}
-              </p>
-              <h1 className="text-2xl font-bold tracking-[-0.02em] sm:text-3xl">{step.title}</h1>
-              <p className="text-sm text-muted-foreground">{step.description}</p>
-            </div>
-
-            <StepBody wizard={wizard} />
-
-            <WizardFooter
-              canGoBack={stepIndex > 0}
-              canSkip={step.optional}
-              isLastStep={wizard.isLastStep}
-              skipLabel={SKIP_LABELS[step.id] ?? "Skip"}
-              onBack={wizard.back}
-              onSkip={wizard.skip}
-              onNext={wizard.next}
-            />
+      <main
+        className="relative z-[1] flex flex-1 justify-center px-4 pt-6 pb-32 sm:px-8 sm:pt-[8vh]"
+        onKeyDown={(event) => {
+          // Enter in a field continues, except inside a step's own small forms (like "Add an item").
+          const target = event.target as HTMLElement;
+          if (event.key === "Enter" && target.tagName === "INPUT" && !target.closest("form")) {
+            event.preventDefault();
+            wizard.next();
+          }
+        }}
+      >
+        <div
+          key={step.id}
+          {...{ [BUBBLE_AVOID_ATTRIBUTE]: "" }}
+          className={cn(
+            "flex w-full flex-col gap-8 animate-in duration-500 ease-out fade-in-0 motion-reduce:animate-none",
+            step.id === "items" || step.id === "type" ? "max-w-3xl" : "max-w-xl",
+            shown.direction > 0 ? "slide-in-from-right-12" : "slide-in-from-left-12",
+          )}
+        >
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Step {stepIndex + 1} of {STEPS.length}
+              {step.optional && " · Optional"}
+            </p>
+            <h1 className="text-4xl font-bold tracking-[-0.03em] sm:text-5xl">{step.title}</h1>
+            <p className="text-lg text-muted-foreground">{step.description}</p>
           </div>
-        </main>
-      </div>
+
+          <div className="animate-in delay-100 duration-500 fill-mode-both fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none">
+            <StepBody wizard={wizard} />
+          </div>
+        </div>
+      </main>
+
+      <WizardFooter
+        stepIndex={stepIndex}
+        furthestIndex={wizard.furthestIndex}
+        canGoBack={stepIndex > 0}
+        canSkip={step.optional}
+        isLastStep={wizard.isLastStep}
+        skipLabel={SKIP_LABELS[step.id] ?? "Skip"}
+        canGoTo={wizard.canGoTo}
+        onGoTo={wizard.goTo}
+        onBack={wizard.back}
+        onSkip={wizard.skip}
+        onNext={wizard.next}
+      />
     </div>
   );
 }

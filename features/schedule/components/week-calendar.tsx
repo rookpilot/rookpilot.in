@@ -18,7 +18,7 @@ interface WeekCalendarProps {
 /** Seven columns on wide screens; a list of days on phones. */
 export function WeekCalendar({ anchor, today, events, onOpen }: WeekCalendarProps) {
   return (
-    <ol className="grid gap-1.5 lg:grid-cols-7">
+    <ol className="grid grid-cols-1 gap-1.5 lg:grid-cols-7">
       {weekDays(anchor).map((day) => {
         const date = fromISODate(day);
         const dayEvents = events.get(day) ?? [];

@@ -59,7 +59,7 @@ export function ContactDetail({ contact, data, onEdit, onDelete }: ContactDetail
       </div>
 
       {channels.length > 0 && (
-        <dl className="flex flex-col divide-y rounded-xl border bg-card">
+        <dl className="flex flex-col divide-y overflow-hidden surface">
           {channels.map((channel) => (
             <div key={channel.label} className="flex items-center gap-3 px-4 py-2.5">
               <channel.icon className="size-4 text-muted-foreground" aria-hidden="true" />

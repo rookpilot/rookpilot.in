@@ -18,7 +18,6 @@ import { draftToBuilding } from "../to-building";
 /** Finishing opens Home for the new building. It lives in memory until phase 2 adds the API. */
 const AFTER_ONBOARDING_PATH = "/app";
 
-
 function suggestedRoomDrafts(draft: OnboardingDraft): RoomDraft[] {
   return suggestRooms(draft.buildingType, draft.basics).map((room) => ({ id: newId(), ...room }));
 }
@@ -78,6 +77,12 @@ export function useOnboarding() {
     dispatchData({ type: "addBuilding", ...created });
     // Next.js keeps visited pages mounted (Cache Components), so start fresh
     // for the next visit instead of reopening on the last step.
+    dispatch({ type: "reset" });
+    router.push(AFTER_ONBOARDING_PATH);
+  }
+
+  /** Leaves without adding a building, starting fresh next time. */
+  function exit() {
     dispatch({ type: "reset" });
     router.push(AFTER_ONBOARDING_PATH);
   }
@@ -175,6 +180,7 @@ export function useOnboarding() {
     totals: summarize(draft),
     next,
     back,
+    exit,
     skip,
     goTo,
     canGoTo,
