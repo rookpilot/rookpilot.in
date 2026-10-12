@@ -30,7 +30,7 @@ export function FormField({ label, error, hint, optional, className, inputClassN
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={cn("h-9", inputClassName)}
+        className={cn("h-10", inputClassName)}
         {...inputProps}
       />
       {error ? (

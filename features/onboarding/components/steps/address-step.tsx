@@ -2,6 +2,7 @@ import { FormField } from "@/components/form/form-field";
 import type { Address } from "@/lib/domain/building";
 
 import type { StepErrors } from "../../selectors";
+import { BIG_INPUT } from "./field-styles";
 
 interface AddressStepProps {
   address: Address;
@@ -11,9 +12,10 @@ interface AddressStepProps {
 
 export function AddressStep({ address, errors, onChange }: AddressStepProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-6">
+    <div className="grid grid-cols-2 gap-5 sm:grid-cols-6">
       <FormField
-        className="sm:col-span-6"
+        inputClassName={BIG_INPUT}
+        className="col-span-2 sm:col-span-6"
         label="Street address"
         autoComplete="address-line1"
         placeholder="1428 Elm Street"
@@ -23,7 +25,8 @@ export function AddressStep({ address, errors, onChange }: AddressStepProps) {
         autoFocus
       />
       <FormField
-        className="sm:col-span-6"
+        inputClassName={BIG_INPUT}
+        className="col-span-2 sm:col-span-6"
         label="Apartment, suite, or unit"
         optional
         autoComplete="address-line2"
@@ -31,7 +34,8 @@ export function AddressStep({ address, errors, onChange }: AddressStepProps) {
         onChange={(e) => onChange({ line2: e.target.value })}
       />
       <FormField
-        className="sm:col-span-3"
+        inputClassName={BIG_INPUT}
+        className="col-span-2 sm:col-span-3"
         label="City"
         autoComplete="address-level2"
         value={address.city}
@@ -39,6 +43,7 @@ export function AddressStep({ address, errors, onChange }: AddressStepProps) {
         onChange={(e) => onChange({ city: e.target.value })}
       />
       <FormField
+        inputClassName={BIG_INPUT}
         className="sm:col-span-1"
         label="State"
         autoComplete="address-level1"
@@ -47,6 +52,7 @@ export function AddressStep({ address, errors, onChange }: AddressStepProps) {
         onChange={(e) => onChange({ region: e.target.value })}
       />
       <FormField
+        inputClassName={BIG_INPUT}
         className="sm:col-span-2"
         label="ZIP code"
         autoComplete="postal-code"
@@ -56,7 +62,8 @@ export function AddressStep({ address, errors, onChange }: AddressStepProps) {
         onChange={(e) => onChange({ postalCode: e.target.value })}
       />
       <FormField
-        className="sm:col-span-6"
+        inputClassName={BIG_INPUT}
+        className="col-span-2 sm:col-span-6"
         label="Country"
         autoComplete="country-name"
         value={address.country}

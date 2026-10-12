@@ -15,7 +15,7 @@ export function NextUpList({ entries, today, onMarkDone }: NextUpListProps) {
   }
 
   return (
-    <ul className="flex flex-col divide-y rounded-xl border bg-card">
+    <ul className="flex flex-col divide-y overflow-hidden surface">
       {entries.map((entry) => (
         <TaskRow key={entry.schedule.id} entry={entry} today={today} onMarkDone={onMarkDone} />
       ))}

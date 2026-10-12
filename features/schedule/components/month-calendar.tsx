@@ -28,7 +28,7 @@ export function MonthCalendar({ anchor, today, events, onOpen, onShowDay }: Mont
   const weeks = monthWeeks(anchor);
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card" role="grid" aria-label={format(fromISODate(anchor), "MMMM yyyy")}>
+    <div className="overflow-hidden surface" role="grid" aria-label={format(fromISODate(anchor), "MMMM yyyy")}>
       <div role="row" className="grid grid-cols-7 divide-x border-b bg-muted">
         {weekDays(weeks[0][0]).map((day) => (
           <span key={day} role="columnheader" className="group-label px-1.5 py-1 text-center sm:text-left">

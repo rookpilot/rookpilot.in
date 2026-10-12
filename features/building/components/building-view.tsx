@@ -45,7 +45,7 @@ function BuildingEditor({ data, building }: { data: AppData; building: Building 
   return (
     <Page className="max-w-7xl">
       <PageHeader eyebrow={building.name} title="Building" description="Rooms, the things in them, and the timers that keep each one maintained." />
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,1.15fr)]">
         <RoomList
           rooms={rooms}
           itemCounts={itemCounts}
@@ -92,7 +92,7 @@ export function BuildingSkeleton() {
   return (
     <Page className="max-w-7xl" aria-busy>
       <Skeleton className="h-9 w-48" />
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,1.15fr)]">
         <Skeleton className="h-96 rounded-xl" />
         <Skeleton className="hidden h-96 rounded-xl lg:block" />
         <Skeleton className="hidden h-96 rounded-xl lg:block" />

@@ -71,7 +71,7 @@ function WorkPage({ kind, data, building }: { kind: WorkKind; data: AppData; bui
           </Button>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className={cn("flex-col gap-3", selected ? "hidden lg:flex" : "flex")}>
           <FilterChips
             label="Filter by status"
@@ -150,7 +150,7 @@ export function WorkSkeleton() {
   return (
     <Page className="max-w-6xl" aria-busy>
       <Skeleton className="h-9 w-48" />
-      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         <Skeleton className="h-96 rounded-xl" />
         <Skeleton className="hidden h-96 rounded-xl lg:block" />
       </div>

@@ -113,7 +113,7 @@ interface SectionProps {
 
 function Section({ title, description, danger, children }: SectionProps) {
   return (
-    <section className={danger ? "flex flex-col gap-3 rounded-xl border border-destructive/40 bg-card p-5" : "flex flex-col gap-3 rounded-xl border bg-card p-5"}>
+    <section className={danger ? "flex flex-col gap-3 rounded-xl border border-destructive/40 bg-card p-5" : "flex flex-col gap-3 surface p-5"}>
       <div className="flex flex-col gap-0.5">
         <h2 className={danger ? "text-base font-bold text-destructive" : "text-base font-bold"}>{title}</h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}

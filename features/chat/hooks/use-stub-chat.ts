@@ -10,7 +10,7 @@ export interface ChatMessage {
 
 /** Placeholder reply until the AI assistant is connected (phase 3). */
 export const STUB_REPLY =
-  "Rookpilot's assistant isn't connected yet. For now you can manage rooms and items in the Building tab, and marking tasks done arrives with the Schedule tab.";
+  "Rookpilot's assistant isn't connected yet. For now, mark tasks done from Home or the Schedule, and log fixes in Repairs.";
 
 export function useStubChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

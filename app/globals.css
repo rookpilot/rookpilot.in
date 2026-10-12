@@ -65,7 +65,7 @@
  * Every color lives here; components only use these tokens.
  */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
   --background: #f7f7f6;
   --foreground: #171717;
@@ -95,6 +95,9 @@
   --ok-soft: #dcf0e3;
   --work: #3c5fa8;
   --work-soft: #dfe7f6;
+  --bubble-hi: #ffffff;
+  --bubble-lo: #e4e4e1;
+  --bubble-shine: rgb(255 255 255 / 0.8);
   --tag: #e7a516;
   --tag-soft: #fbf0d3;
 
@@ -138,6 +141,9 @@
   --ok-soft: #173726;
   --work: #8fb0f0;
   --work-soft: #1c2840;
+  --bubble-hi: #333333;
+  --bubble-lo: #242424;
+  --bubble-shine: rgb(255 255 255 / 0.06);
   --tag: #f0b93a;
   --tag-soft: #3a2f12;
 
@@ -149,6 +155,14 @@
   --sidebar-accent-foreground: #ededed;
   --sidebar-border: #343434;
   --sidebar-ring: #737373;
+}
+
+/* A soft card: hairline border and a faint shadow instead of a heavy box. */
+@utility surface {
+  background-color: var(--card);
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+  border-radius: calc(var(--radius) * 1.34);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.02);
 }
 
 /* Small mono label above a heading: "BUILDING", "WORK". */
@@ -187,6 +201,14 @@
     @apply font-heading;
     line-height: 1.15;
     text-wrap: balance;
+  }
+  /* Keep browser-autofilled fields on our colors instead of Chrome's light blue. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    box-shadow: 0 0 0 1000px var(--card) inset;
+    transition: background-color 9999s ease-out;
   }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;

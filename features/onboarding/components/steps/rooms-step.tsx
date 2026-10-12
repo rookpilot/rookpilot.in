@@ -23,18 +23,18 @@ const SELECTABLE_KINDS = ROOM_KINDS.filter((kind) => kind !== "whole_building");
 export function RoomsStep({ rooms, errors, onAdd, onUpdate, onRemove, onReset }: RoomsStepProps) {
   return (
     <div className="flex flex-col gap-4">
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col divide-y overflow-hidden surface">
         {rooms.map((room) => {
           const isWholeBuilding = room.kind === "whole_building";
           const error = errors[room.id];
           return (
-            <li key={room.id} className="flex flex-col gap-1">
+            <li key={room.id} className="flex flex-col gap-1 px-2 py-1.5 animate-in duration-200 fade-in-0">
               <div className="flex items-center gap-2">
                 <Input
                   aria-label="Room name"
                   aria-invalid={error ? true : undefined}
                   placeholder="Room name"
-                  className="h-9 flex-1"
+                  className="h-10 flex-1 border-transparent bg-transparent text-base shadow-none focus-visible:border-ring md:text-base dark:bg-transparent"
                   value={room.name}
                   onChange={(e) => onUpdate(room.id, { name: e.target.value })}
                 />
@@ -43,7 +43,7 @@ export function RoomsStep({ rooms, errors, onAdd, onUpdate, onRemove, onReset }:
                 ) : (
                   <NativeSelect
                     aria-label={`Kind of room for ${room.name || "new room"}`}
-                    className="w-32 sm:w-40"
+                    className="w-32 sm:w-40 [&_select]:border-transparent [&_select]:bg-muted/60 [&_select]:text-muted-foreground"
                     value={room.kind}
                     onChange={(e) => onUpdate(room.id, { kind: e.target.value as RoomKind })}
                   >
@@ -66,18 +66,18 @@ export function RoomsStep({ rooms, errors, onAdd, onUpdate, onRemove, onReset }:
                   <X />
                 </Button>
               </div>
-              {error && <p className="text-xs text-destructive">{error}</p>}
+              {error && <p className="px-3 pb-1 text-xs text-destructive">{error}</p>}
             </li>
           );
         })}
       </ul>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" onClick={onAdd}>
+        <Button type="button" variant="outline" className="rounded-full" onClick={onAdd}>
           <Plus data-icon="inline-start" />
           Add room
         </Button>
-        <Button type="button" variant="ghost" className="text-muted-foreground" onClick={onReset}>
+        <Button type="button" variant="ghost" className="rounded-full text-muted-foreground" onClick={onReset}>
           <RotateCcw data-icon="inline-start" />
           Reset to suggestions
         </Button>

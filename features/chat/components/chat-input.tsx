@@ -11,7 +11,7 @@ interface ChatInputProps {
 }
 
 /** Enter sends; Shift+Enter adds a new line. */
-export function ChatInput({ onSend, placeholder = "Tell Rookpilot what happened…" }: ChatInputProps) {
+export function ChatInput({ onSend, placeholder = "Message Rookpilot…" }: ChatInputProps) {
   const [value, setValue] = useState("");
 
   function submit() {

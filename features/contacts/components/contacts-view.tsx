@@ -52,7 +52,7 @@ function Contacts({ data }: { data: AppData }) {
           </Button>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className={cn(selected ? "hidden lg:block" : "block")}>
           <ContactList contacts={contacts} query={query} onQueryChange={setQuery} selectedId={shown?.id ?? null} onSelect={select} />
         </div>
@@ -100,7 +100,7 @@ export function ContactsSkeleton() {
   return (
     <Page className="max-w-6xl" aria-busy>
       <Skeleton className="h-9 w-48" />
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Skeleton className="h-96 rounded-xl" />
         <Skeleton className="hidden h-96 rounded-xl lg:block" />
       </div>
