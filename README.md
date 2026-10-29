@@ -2,7 +2,7 @@
 
 The Rookpilot web app: where you set up your building, see what's due, and chat with Rookpilot.
 
-**Status: phase 1 (UI only).** There is no backend yet. Sign-up and log-in don't create accounts. The app runs on sample data held in the browser: your changes last until you refresh.
+**Status: phase 2 in progress.** Supabase is set up, but nothing uses it yet. Sign-up and log-in don't create accounts. The app runs on sample data held in the browser: your changes last until you refresh.
 
 ## Run it
 
@@ -22,6 +22,30 @@ npm run dev          # http://localhost:3000
 | `npm run test:watch` | Unit tests in watch mode |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
+| `npm run db:start` | Start local Supabase in Docker |
+| `npm run db:stop` | Stop local Supabase |
+| `npm run db:status` | Show local Supabase URLs and keys |
+
+## Supabase
+
+Phase 2 moves data to Supabase. Day-to-day work runs against a local copy in Docker, so testing never touches the real project. Requires Docker Desktop with WSL integration turned on.
+
+```bash
+npm run db:start                 # first run downloads images; prints the API URL and publishable key
+cp .env.example .env.local       # paste the publishable key into .env.local
+npm run dev
+```
+
+Local Studio (a dashboard for the local database) runs at http://127.0.0.1:54323.
+
+The `supabase/` folder holds the local config, and later the table changes (`migrations/`) and sample data (`seed.sql`). To connect the CLI to the hosted project once per machine:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <project-id>    # the ID in your dashboard URL
+```
+
+Code connects through `lib/supabase/`: `client.ts` in Client Components, `server.ts` in Server Components and Server Actions. `proxy.ts` at the root keeps the login fresh on every request.
 
 ## Routes
 
