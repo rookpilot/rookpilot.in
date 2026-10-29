@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 
 import { Logo, LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { useSignOut } from "@/features/auth/hooks/use-account";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed = false, onToggleCollapsed, onNavigate }: AppSidebarProps) {
   const { openSearch } = useShell();
+  const signOut = useSignOut();
 
   return (
     <div className={cn("flex h-full flex-col gap-4 py-4", collapsed ? "px-2.5" : "px-3")}>
@@ -53,15 +55,13 @@ export function AppSidebar({ collapsed = false, onToggleCollapsed, onNavigate }:
         )}
         <ThemeToggle />
         {collapsed ? (
-          <SidebarIconButton label="Log out" href="/login">
+          <SidebarIconButton label="Log out" onClick={signOut}>
             <LogOut />
           </SidebarIconButton>
         ) : (
-          <Button asChild variant="ghost" size="sm" className="ml-auto text-muted-foreground">
-            <Link href="/login">
-              <LogOut data-icon="inline-start" />
-              Log out
-            </Link>
+          <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground" onClick={signOut}>
+            <LogOut data-icon="inline-start" />
+            Log out
           </Button>
         )}
       </div>

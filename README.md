@@ -2,7 +2,7 @@
 
 The Rookpilot web app: where you set up your building, see what's due, and chat with Rookpilot.
 
-**Status: phase 2 in progress.** Supabase is set up, but nothing uses it yet. Sign-up and log-in don't create accounts. The app runs on sample data held in the browser: your changes last until you refresh.
+**Status: phase 2 in progress.** Accounts are real (email or Google, through Supabase). The app itself still runs on sample data held in the browser: your changes last until you refresh.
 
 ## Run it
 
@@ -32,11 +32,13 @@ Phase 2 moves data to Supabase. Day-to-day work runs against a local copy in Doc
 
 ```bash
 npm run db:start                 # first run downloads images; prints the API URL and publishable key
-cp .env.example .env.local       # paste the publishable key into .env.local
+cp .env.example .env.local       # paste the publishable key and Google client ID and secret
 npm run dev
 ```
 
-Local Studio (a dashboard for the local database) runs at http://127.0.0.1:54323.
+Local Studio (a dashboard for the local database) runs at http://127.0.0.1:54323. Emails never really send locally: confirmation emails land in the local inbox at http://127.0.0.1:54324.
+
+Auth settings (redirect URLs, email confirmation, Google) live in `supabase/config.toml`, and the confirmation email is `supabase/templates/confirmation.html`. Restart with `npm run db:stop && npm run db:start` after changing either.
 
 The `supabase/` folder holds the local config, and later the table changes (`migrations/`) and sample data (`seed.sql`). To connect the CLI to the hosted project once per machine:
 
@@ -45,14 +47,17 @@ npx supabase login
 npx supabase link --project-ref <project-id>    # the ID in your dashboard URL
 ```
 
-Code connects through `lib/supabase/`: `client.ts` in Client Components, `server.ts` in Server Components and Server Actions. `proxy.ts` at the root keeps the login fresh on every request.
+Code connects through `lib/supabase/`: `client.ts` in Client Components, `server.ts` in Server Components and Server Actions. `proxy.ts` at the root keeps the login fresh on every request and decides who can open which pages (`lib/supabase/routes.ts`).
 
 ## Routes
 
+`/app` and `/onboarding` need an account. Signed-out people are sent to `/login`, and back to where they were going after they log in.
+
 | Route | Page |
 | --- | --- |
-| `/` | Redirects to `/signup` |
-| `/signup`, `/login` | Auth pages. Every button continues to onboarding. |
+| `/` | Redirects to `/app` when signed in, `/signup` otherwise |
+| `/signup`, `/login` | Auth pages, email or Google. Signing up sends a confirmation email, and its link opens onboarding. Signed-in people go to `/app`. |
+| `/auth/confirm`, `/auth/callback` | Finish sign-in from the email link or Google, then redirect |
 | `/onboarding` | 5-step wizard, one full screen per step with dots at the bottom: address and type are required; basics, rooms, and items can be skipped. Finishing adds the building. |
 | `/app` | Home: overdue, due this week, open repairs, next tasks with Mark done, and work in progress |
 | `/app/schedule` | Every timer as a list, week, or month. `?view=` and `?date=`; the last view is remembered. |

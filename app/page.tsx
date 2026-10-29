@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// There is no marketing page yet; the app starts at sign-up.
+// proxy.ts sends "/" to /app or /signup before this renders. This is only a fallback.
 export default function RootPage() {
   redirect("/signup");
 }

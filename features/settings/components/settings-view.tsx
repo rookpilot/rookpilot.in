@@ -11,6 +11,7 @@ import { Page } from "@/components/layout/page";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAccount, useSignOut } from "@/features/auth/hooks/use-account";
 import { selectBuilding, useCurrentBuilding } from "@/features/shell/hooks/use-current-building";
 import { BUILDING_TYPE_INFO, formatAddressLine } from "@/lib/domain/building";
 
@@ -21,6 +22,8 @@ import { ThemePicker } from "./theme-picker";
 export function SettingsView() {
   const current = useCurrentBuilding();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const account = useAccount();
+  const signOut = useSignOut();
 
   if (!current) return <SettingsSkeleton />;
   const { data, building } = current;
@@ -75,12 +78,10 @@ export function SettingsView() {
         <ThemePicker />
       </Section>
 
-      <Section title="Account" description="Accounts arrive with the backend in phase 2.">
-        <Button asChild variant="outline" className="self-start">
-          <Link href="/login">
-            <LogOut data-icon="inline-start" />
-            Log out
-          </Link>
+      <Section title="Account" description={account ? `Signed in as ${account.email}.` : undefined}>
+        <Button variant="outline" className="self-start" onClick={signOut}>
+          <LogOut data-icon="inline-start" />
+          Log out
         </Button>
       </Section>
 
