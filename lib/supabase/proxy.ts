@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import type { Database } from "./database.types";
 import { supabaseEnv } from "./env";
 import { authRedirect } from "./routes";
 
@@ -12,7 +13,7 @@ export async function updateSession(request: NextRequest) {
   const { url, key } = supabaseEnv();
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient<Database>(url, key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
