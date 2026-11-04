@@ -25,6 +25,9 @@ npm run dev          # http://localhost:3000
 | `npm run db:start` | Start local Supabase in Docker |
 | `npm run db:stop` | Stop local Supabase |
 | `npm run db:status` | Show local Supabase URLs and keys |
+| `npm run db:reset` | Rebuild the local database from the migrations and seed data |
+| `npm run db:test` | Test the database access rules |
+| `npm run db:types` | Regenerate `lib/supabase/database.types.ts` after changing tables |
 
 ## Supabase
 
@@ -40,7 +43,26 @@ Local Studio (a dashboard for the local database) runs at http://127.0.0.1:54323
 
 Auth settings (redirect URLs, email confirmation, Google) live in `supabase/config.toml`, and the confirmation email is `supabase/templates/confirmation.html`. Restart with `npm run db:stop && npm run db:start` after changing either.
 
-The `supabase/` folder holds the local config, and later the table changes (`migrations/`) and sample data (`seed.sql`). To connect the CLI to the hosted project once per machine:
+The `supabase/` folder holds the local config, the table changes (`migrations/`, one file per table, run in name order), local sample data (`seed.sql`), and access-rule tests (`tests/`).
+
+### Database
+
+Every table and access rule is a migration file, so the database is rebuilt the same way everywhere. Don't change the hosted project's tables in its dashboard.
+
+Local is safe to experiment with. Change anything in local Studio, then `npm run db:reset` puts it back exactly as the migrations describe. To keep a change made in Studio, first run `npx supabase db diff -f <name>`: it writes the change into a new migration.
+
+After a reset, two test logins exist (password `password123`):
+
+| Login | Sees |
+| --- | --- |
+| `test@rookpilot.dev` | Elm Street house, which they own |
+| `partner@rookpilot.dev` | Elm Street house as a member, plus Mom's house, which they own |
+
+Access rules, in short: you see a building only if you're one of its members, and everything inside it follows the building. Contacts belong to whoever added them; other members see a contact only where it's tagged on that building's work or history.
+
+### Hosted project
+
+To connect the CLI to the hosted project once per machine:
 
 ```bash
 npx supabase login
