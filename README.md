@@ -2,7 +2,7 @@
 
 The Rookpilot web app: where you set up your building, see what's due, and chat with Rookpilot.
 
-**Status: phase 2 in progress.** Accounts are real (email or Google, through Supabase). The app itself still runs on sample data held in the browser: your changes last until you refresh.
+**Status: phase 2 in progress.** Accounts are real (email or Google), and everything you add or change is saved to Supabase. Contact photos don't save yet: they last until you refresh.
 
 ## Run it
 
@@ -26,7 +26,7 @@ npm run dev          # http://localhost:3000
 | `npm run db:stop` | Stop local Supabase |
 | `npm run db:status` | Show local Supabase URLs and keys |
 | `npm run db:reset` | Rebuild the local database from the migrations and seed data |
-| `npm run db:test` | Test the database access rules |
+| `npm run db:test` | Test the database access rules and save functions, then run every kind of save through the app's code (needs local Supabase with seed data) |
 | `npm run db:types` | Regenerate `lib/supabase/database.types.ts` after changing tables |
 
 ## Supabase
@@ -111,10 +111,10 @@ lib/domain/           Types and helpers for buildings, rooms, schedules, contact
 lib/templates/        Starter room and item catalogs
 lib/scheduling.ts     Due dates: next due, overdue / due soon, labels, what Mark done does
 lib/calendar.ts       Week and month grid math
-lib/data/             Sample-data store, reducer, selectors (replaced by the API in phase 2)
+lib/data/             Store, reducer, selectors, and Supabase load/save (sample data is only used by tests)
 ```
 
-Components read data through `useAppData()`. Changes go through each feature's `actions.ts` (for example `features/work/actions.ts`), which fill in ids and dates and call `dispatch()` in `lib/data/store.ts`. Phase 2 swaps that module for API calls without changing the components.
+Components read data through `useAppData()`. Changes go through each feature's `actions.ts` (for example `features/work/actions.ts`), which fill in ids and dates and call `dispatch()` in `lib/data/store.ts`. The store loads everything the signed-in person can see (`lib/data/remote.ts`), shows each change right away through the reducer, then saves it in the background, one change at a time. If a save fails, a toast says so and the data reloads. Saves that touch several tables (onboarding, adding items, Mark done, saving a project or repair) go through database functions, so they save completely or not at all. `lib/data/rows.ts` converts between database rows and the app's types.
 
 Each feature keeps React out of its logic. For example, onboarding has a pure reducer (`state.ts`), pure validation and totals (`selectors.ts`), one hook that wires them together (`hooks/use-onboarding.ts`), and components that only render. Logic files have tests next to them (`*.test.ts`).
 

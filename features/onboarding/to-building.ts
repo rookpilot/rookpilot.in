@@ -17,7 +17,7 @@ const toNumber = (value: string) => (value.trim() ? Number.parseInt(value, 10) :
 
 /**
  * Turns the finished wizard into a building with rooms, items, and timers.
- * In phase 2 this becomes the body of the "create building" API call.
+ * Saved in one step by the create_building database function.
  */
 export function draftToBuilding(draft: OnboardingDraft, today: ISODate, newId: IdFactory): NewBuilding {
   if (!draft.buildingType) throw new Error("A building type is required to finish onboarding.");
