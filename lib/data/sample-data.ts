@@ -125,6 +125,7 @@ export function createSampleData(today: ISODate): AppData {
     logs: all.flatMap((b) => b.logs),
     work: sampleWork({ buildingId: house.building.id, spaces: house.spaces, items: house.items, today }),
     contacts: SAMPLE_CONTACTS,
+    attachments: [],
     currentBuildingId: house.building.id,
     today,
   };

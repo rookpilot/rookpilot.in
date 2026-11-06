@@ -1,7 +1,7 @@
 "use client";
 
 import { Camera, X } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { ContactAvatar } from "@/components/contact-avatar";
 import { DialogForm, FormDialog } from "@/components/form/form-dialog";
@@ -10,15 +10,14 @@ import { TextareaField } from "@/components/form/textarea-field";
 import { Button } from "@/components/ui/button";
 import type { Contact } from "@/lib/domain/models";
 
-import type { ContactForm } from "../actions";
-import { readPhoto } from "../photo";
+import type { ContactForm, PhotoChange } from "../actions";
 
 interface ContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Edit this contact; leave out to add a new one. */
   contact?: Contact;
-  onSave: (form: ContactForm) => void;
+  onSave: (form: ContactForm, photo: PhotoChange) => void;
 }
 
 export function ContactDialog({ open, onOpenChange, contact, onSave }: ContactDialogProps) {
@@ -26,8 +25,8 @@ export function ContactDialog({ open, onOpenChange, contact, onSave }: ContactDi
     <FormDialog open={open} onOpenChange={onOpenChange}>
       <ContactFormBody
         contact={contact}
-        onSave={(form) => {
-          onSave(form);
+        onSave={(form, photo) => {
+          onSave(form, photo);
           onOpenChange(false);
         }}
       />
@@ -35,26 +34,40 @@ export function ContactDialog({ open, onOpenChange, contact, onSave }: ContactDi
   );
 }
 
-const EMPTY: ContactForm = { name: "", company: "", trade: "", phone: "", email: "", instagram: "", photoUrl: null, whyWeLikeThem: "" };
+const EMPTY: ContactForm = { name: "", company: "", trade: "", phone: "", email: "", instagram: "", whyWeLikeThem: "" };
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function ContactFormBody({ contact, onSave }: Pick<ContactDialogProps, "contact" | "onSave">) {
   const [form, setForm] = useState<ContactForm>(() => (contact ? { ...contact, instagram: contact.instagram && `@${contact.instagram}` } : EMPTY));
+  const [photo, setPhoto] = useState<PhotoChange>({ kind: "keep" });
+  const [preview, setPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string>();
+  const hasPhoto = photo.kind === "replace" || (photo.kind === "keep" && Boolean(contact?.photoPath));
   const fileInput = useRef<HTMLInputElement>(null);
   const photoId = useId();
   const set = (patch: Partial<ContactForm>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const emailError = form.email.trim() && !EMAIL.test(form.email.trim()) ? "That doesn't look like an email address." : undefined;
 
-  async function pickPhoto(file: File | undefined) {
+  // The preview is a temporary link to the picked file; free it when it changes or the dialog closes.
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  function pickPhoto(file: File | undefined) {
     if (!file) return;
-    try {
-      set({ photoUrl: await readPhoto(file) });
-      setPhotoError(undefined);
-    } catch {
-      setPhotoError("That file couldn't be read as an image.");
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Pick an image file.");
+      return;
     }
+    setPhoto({ kind: "replace", file });
+    setPreview(URL.createObjectURL(file));
+    setPhotoError(undefined);
+  }
+
+  function removePhoto() {
+    setPhoto(contact?.photoPath ? { kind: "remove" } : { kind: "keep" });
+    setPreview(null);
   }
 
   return (
@@ -63,18 +76,22 @@ function ContactFormBody({ contact, onSave }: Pick<ContactDialogProps, "contact"
       description={contact ? undefined : "Someone who helps keep your buildings running."}
       submitLabel={contact ? "Save" : "Add contact"}
       canSubmit={form.name.trim().length > 0 && !emailError}
-      onSubmit={() => onSave(form)}
+      onSubmit={() => onSave(form, photo)}
     >
       <div className="flex items-center gap-3">
-        <ContactAvatar contact={{ name: form.name || "?", photoUrl: form.photoUrl }} className="size-14" />
+        <ContactAvatar
+          contact={{ name: form.name || "?", photoPath: contact?.photoPath ?? null }}
+          previewUrl={photo.kind === "keep" ? undefined : preview}
+          className="size-14"
+        />
         <div className="flex flex-col gap-1">
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
               <Camera data-icon="inline-start" />
-              {form.photoUrl ? "Change photo" : "Add photo"}
+              {hasPhoto ? "Change photo" : "Add photo"}
             </Button>
-            {form.photoUrl && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => set({ photoUrl: null })}>
+            {hasPhoto && (
+              <Button type="button" variant="ghost" size="sm" onClick={removePhoto}>
                 <X data-icon="inline-start" />
                 Remove
               </Button>
@@ -91,7 +108,7 @@ function ContactFormBody({ contact, onSave }: Pick<ContactDialogProps, "contact"
             className="sr-only"
             tabIndex={-1}
             onChange={(e) => {
-              void pickPhoto(e.target.files?.[0]);
+              pickPhoto(e.target.files?.[0]);
               e.target.value = "";
             }}
           />

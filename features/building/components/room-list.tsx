@@ -84,7 +84,7 @@ export function RoomList({ rooms, itemCounts, selectedId, visibleOnMobile, onSel
         title={dialog?.kind === "delete" ? `Delete ${dialog.room.name}?` : ""}
         description={
           dialog?.kind === "delete"
-            ? `This also deletes its ${itemCounts.get(dialog.room.id) ?? 0} items and their timers.`
+            ? `This also deletes its ${itemCounts.get(dialog.room.id) ?? 0} items with their timers, history, and files.`
             : ""
         }
         confirmLabel="Delete room"

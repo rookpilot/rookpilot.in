@@ -7,6 +7,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { getItemTemplate } from "@/lib/templates/items";
 
 import { buildItems } from "./builders";
+import { attachmentPath, contactPhotoPath, uploadFile, type Bucket } from "./files";
 import { dataReducer, type DataAction } from "./reducer";
 import { loadAppData, persist } from "./remote";
 import type { AppData } from "./types";
@@ -116,7 +117,7 @@ describe.skipIf(!enabled)("saving to Supabase", () => {
 
     await apply({
       type: "addContact",
-      contact: { id: contactId, name: "Save test plumber", company: "", trade: "Plumber", phone: "", email: "", instagram: "", photoUrl: null, whyWeLikeThem: "" },
+      contact: { id: contactId, name: "Save test plumber", company: "", trade: "Plumber", phone: "", email: "", instagram: "", photoPath: null, whyWeLikeThem: "" },
     });
     await apply({ type: "updateContact", id: contactId, patch: { phone: "(503) 555-0100" } });
 
@@ -163,5 +164,92 @@ describe.skipIf(!enabled)("saving to Supabase", () => {
     reloaded = { ...(await loadAppData(supabase, today)), currentBuildingId: null };
     expect(reloaded.buildings.some((b) => b.id === buildingId)).toBe(false);
     expect(reloaded.items.some((i) => i.buildingId === buildingId)).toBe(false);
+  });
+});
+
+describe.skipIf(!enabled)("files in Supabase Storage", () => {
+  const elm = "b0000000-0000-0000-0000-000000000001";
+  const moms = "b0000000-0000-0000-0000-000000000002";
+  const dana = "c0000000-0000-0000-0000-000000000001"; // test's contact, tagged on Elm Street's repair
+  const priya = "c0000000-0000-0000-0000-000000000002"; // test's contact, not tagged anywhere
+  const ownerId = "11111111-1111-1111-1111-111111111111";
+  const file = () => new Blob(["%PDF-1.4 test"], { type: "application/pdf" });
+  const photo = () => new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: "image/jpeg" });
+
+  let owner: SupabaseClient<Database>;
+  let partner: SupabaseClient<Database>;
+  let state: AppData;
+  const uploaded: { bucket: Bucket; path: string; client: () => SupabaseClient<Database> }[] = [];
+
+  async function signIn(email: string) {
+    const { url, key } = localEnv();
+    const client = createClient<Database>(url, key, { auth: { persistSession: false } });
+    const { error } = await client.auth.signInWithPassword({ email, password: "password123" });
+    if (error) throw new Error(`Sign in as ${email} failed (run npm run db:reset?): ${error.message}`);
+    return client;
+  }
+
+  async function put(client: SupabaseClient<Database>, bucket: Bucket, path: string, blob: Blob) {
+    await uploadFile(client, bucket, path, blob, blob.type);
+    uploaded.push({ bucket, path, client: () => client });
+  }
+
+  const canRead = async (client: SupabaseClient<Database>, bucket: Bucket, path: string) =>
+    !(await client.storage.from(bucket).download(path)).error;
+
+  beforeAll(async () => {
+    owner = await signIn("test@rookpilot.dev");
+    partner = await signIn("partner@rookpilot.dev");
+    state = { ...(await loadAppData(owner, today)), currentBuildingId: null };
+  });
+
+  afterAll(async () => {
+    for (const { bucket, path, client } of uploaded) await client().storage.from(bucket).remove([path]);
+  });
+
+  it("shares a building's files with its members only", async () => {
+    const elmFile = attachmentPath(elm, id(), "Garage receipt.pdf");
+    const momsFile = attachmentPath(moms, id(), "Furnace manual.pdf");
+    await put(owner, "attachments", elmFile, file());
+    await put(partner, "attachments", momsFile, file());
+
+    expect(await canRead(partner, "attachments", elmFile)).toBe(true);
+    expect(await canRead(owner, "attachments", momsFile)).toBe(false);
+    await expect(uploadFile(owner, "attachments", attachmentPath(moms, id(), "sneaky.pdf"), file(), "application/pdf")).rejects.toThrow();
+  });
+
+  it("shows a contact's photo only where the contact is shared", async () => {
+    const danaPhoto = contactPhotoPath(ownerId, dana, id());
+    const priyaPhoto = contactPhotoPath(ownerId, priya, id());
+    await put(owner, "contact-photos", danaPhoto, photo());
+    await put(owner, "contact-photos", priyaPhoto, photo());
+
+    expect(await canRead(partner, "contact-photos", danaPhoto)).toBe(true);
+    expect(await canRead(partner, "contact-photos", priyaPhoto)).toBe(false);
+    await expect(uploadFile(partner, "contact-photos", contactPhotoPath(ownerId, dana, id()), photo(), "image/jpeg")).rejects.toThrow();
+  });
+
+  it("saves a file's row, and deleting it removes the stored file", async () => {
+    const item = state.items.find((i) => i.buildingId === elm)!;
+    const attachmentId = id();
+    const storagePath = attachmentPath(elm, attachmentId, "filter.pdf");
+    await uploadFile(owner, "attachments", storagePath, file(), "application/pdf");
+    const attachment = { id: attachmentId, buildingId: elm, itemId: item.id, workId: null, logEntryId: null, kind: "manual" as const, storagePath, fileName: "filter.pdf", contentType: "application/pdf", sizeBytes: 13 };
+
+    let before = state;
+    state = dataReducer(state, { type: "addAttachment", attachment });
+    await persist(owner, { type: "addAttachment", attachment }, before);
+    before = state;
+    state = dataReducer(state, { type: "updateAttachment", id: attachmentId, patch: { fileName: "Filter manual.pdf" } });
+    await persist(owner, { type: "updateAttachment", id: attachmentId, patch: { fileName: "Filter manual.pdf" } }, before);
+
+    const reloaded = await loadAppData(owner, today);
+    expect(reloaded.attachments.find((a) => a.id === attachmentId)).toEqual({ ...attachment, fileName: "Filter manual.pdf" });
+
+    before = state;
+    state = dataReducer(state, { type: "deleteAttachment", id: attachmentId });
+    await persist(owner, { type: "deleteAttachment", id: attachmentId }, before);
+    expect(await canRead(owner, "attachments", storagePath)).toBe(false);
+    expect((await loadAppData(owner, today)).attachments.some((a) => a.id === attachmentId)).toBe(false);
   });
 });

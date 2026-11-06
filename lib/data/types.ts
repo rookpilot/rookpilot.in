@@ -1,4 +1,4 @@
-import type { Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
+import type { Attachment, Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
 
 /** Everything the signed-in person can see, loaded from Supabase. */
 export interface AppData {
@@ -9,6 +9,7 @@ export interface AppData {
   logs: LogEntry[];
   work: Work[];
   contacts: Contact[];
+  attachments: Attachment[];
   currentBuildingId: string | null;
   /** The date the data was loaded, used for due-date math. */
   today: ISODate;
