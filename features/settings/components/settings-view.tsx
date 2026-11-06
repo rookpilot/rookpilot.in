@@ -86,7 +86,7 @@ export function SettingsView() {
       </Section>
 
       {building && (
-        <Section title="Delete this building" description="Removes its rooms, items, timers, history, projects, and repairs. Contacts stay." danger>
+        <Section title="Delete this building" description="Removes its rooms, items, timers, history, projects, repairs, and files. Contacts stay." danger>
           <Button variant="destructive" className="self-start" onClick={() => setConfirmDelete(true)}>
             Delete {building.name}
           </Button>
@@ -97,7 +97,7 @@ export function SettingsView() {
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title={`Delete ${building?.name ?? "building"}?`}
-        description="Its rooms, items, timers, history, projects, and repairs are deleted. This can't be undone."
+        description="Its rooms, items, timers, history, projects, repairs, and files are deleted. This can't be undone."
         confirmLabel="Delete building"
         onConfirm={() => building && actions.deleteBuilding(building.id)}
       />

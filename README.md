@@ -2,7 +2,7 @@
 
 The Rookpilot web app: where you set up your building, see what's due, and chat with Rookpilot.
 
-**Status: phase 2 in progress.** Accounts are real (email or Google), and everything you add or change is saved to Supabase. Contact photos don't save yet: they last until you refresh.
+**Status: phase 2 in progress.** Accounts are real (email or Google), everything you add or change is saved to Supabase, and photos and files are kept in Supabase Storage.
 
 ## Run it
 
@@ -59,6 +59,17 @@ After a reset, two test logins exist (password `password123`):
 | `partner@rookpilot.dev` | Elm Street house as a member, plus Mom's house, which they own |
 
 Access rules, in short: you see a building only if you're one of its members, and everything inside it follows the building. Contacts belong to whoever added them; other members see a contact only where it's tagged on that building's work or history.
+
+### Files
+
+Two private Storage buckets. A file's folders decide who can reach it, with the same rules as the tables:
+
+| Bucket | Path | Who |
+| --- | --- | --- |
+| `contact-photos` | `<owner id>/<contact id>/<file>.jpg` | The owner, plus members of buildings where the contact is tagged |
+| `attachments` | `<building id>/<attachment id>/<file name>` | Members of the building |
+
+Files show through links that expire after an hour (`hooks/use-signed-url.ts`). Each attachment also has a row in `attachments` with its name, type, and size. Deleting something deletes its files too: the database removes the rows, and the app removes the stored files (`lib/data/remote.ts`). Contact photos are shrunk to 256px and big photos to 2400px before upload. Attachments can be photos or PDFs up to 25 MB.
 
 ### Hosted project
 

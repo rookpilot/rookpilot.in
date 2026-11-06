@@ -3,8 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ISODate } from "@/lib/domain/models";
 import type { Database, Json } from "@/lib/supabase/database.types";
 
-import type { DataAction } from "./reducer";
+import { removeFiles } from "./files";
+import { attachmentsRemovedBy, type DataAction } from "./reducer";
 import {
+  attachmentFromRow,
+  attachmentToRow,
   buildingFromRow,
   buildingToRow,
   contactFromRow,
@@ -39,7 +42,7 @@ async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data
 
 /** Everything the signed-in person can see. The access rules decide which rows those are. */
 export async function loadAppData(supabase: Client, today: ISODate): Promise<Omit<AppData, "currentBuildingId">> {
-  const [buildings, spaces, items, schedules, logs, work, contacts] = await Promise.all([
+  const [buildings, spaces, items, schedules, logs, work, contacts, attachments] = await Promise.all([
     readAll((from, to) => supabase.from("buildings").select("*").order("created_at").order("id").range(from, to)),
     readAll((from, to) => supabase.from("spaces").select("*").order("sort_order").order("created_at").order("id").range(from, to)),
     readAll((from, to) => supabase.from("items").select("*").order("created_at").order("id").range(from, to)),
@@ -47,6 +50,7 @@ export async function loadAppData(supabase: Client, today: ISODate): Promise<Omi
     readAll((from, to) => supabase.from("log_entries").select("*, log_entry_contacts(contact_id)").order("created_at").order("id").range(from, to)),
     readAll((from, to) => supabase.from("work").select("*, work_contacts(contact_id)").order("created_at").order("id").range(from, to)),
     readAll((from, to) => supabase.from("contacts").select("*").order("created_at").order("id").range(from, to)),
+    readAll((from, to) => supabase.from("attachments").select("*").order("created_at").order("id").range(from, to)),
   ]);
   return {
     buildings: buildings.map(buildingFromRow),
@@ -56,6 +60,7 @@ export async function loadAppData(supabase: Client, today: ISODate): Promise<Omi
     logs: logs.map(logFromRow),
     work: work.map(workFromRow),
     contacts: contacts.map(contactFromRow),
+    attachments: attachments.map(attachmentFromRow),
     today,
   };
 }
@@ -73,6 +78,26 @@ async function run(request: PromiseLike<{ error: unknown }>) {
  * Deletes rely on the database to remove or unlink what depended on the deleted row.
  */
 export async function persist(supabase: Client, action: DataAction, before: AppData): Promise<void> {
+  await saveRows(supabase, action, before);
+  await removeLeftoverFiles(supabase, action, before);
+}
+
+/** After a delete or a photo change is saved, removes the stored files nothing points at anymore. */
+async function removeLeftoverFiles(supabase: Client, action: DataAction, before: AppData) {
+  await removeFiles(supabase, "attachments", attachmentsRemovedBy(before, action).map((a) => a.storagePath));
+
+  const oldPhoto = (id: string) => before.contacts.find((c) => c.id === id)?.photoPath ?? null;
+  if (action.type === "deleteContact") {
+    const path = oldPhoto(action.id);
+    if (path) await removeFiles(supabase, "contact-photos", [path]);
+  }
+  if (action.type === "updateContact" && action.patch.photoPath !== undefined) {
+    const path = oldPhoto(action.id);
+    if (path && path !== action.patch.photoPath) await removeFiles(supabase, "contact-photos", [path]);
+  }
+}
+
+async function saveRows(supabase: Client, action: DataAction, before: AppData): Promise<void> {
   const buildingOfItem = (itemId: string) => before.items.find((i) => i.id === itemId)?.buildingId;
 
   switch (action.type) {
@@ -166,5 +191,12 @@ export async function persist(supabase: Client, action: DataAction, before: AppD
     }
     case "deleteWork":
       return run(supabase.from("work").delete().eq("id", action.id));
+
+    case "addAttachment":
+      return run(supabase.from("attachments").insert(attachmentToRow(action.attachment)));
+    case "updateAttachment":
+      return run(supabase.from("attachments").update(attachmentToRow(action.patch)).eq("id", action.id));
+    case "deleteAttachment":
+      return run(supabase.from("attachments").delete().eq("id", action.id));
   }
 }
