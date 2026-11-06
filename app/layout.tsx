@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, JetBrains_Mono, Public_Sans } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster position="bottom-right" />
         </ThemeProvider>
       </body>
     </html>

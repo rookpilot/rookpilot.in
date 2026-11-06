@@ -1,6 +1,6 @@
 import type { Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
 
-/** Everything the app knows. In phase 2 this moves behind the API. */
+/** Everything the signed-in person can see, loaded from Supabase. */
 export interface AppData {
   buildings: Building[];
   spaces: Space[];

@@ -299,7 +299,18 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "add_items":
+{ Args: { "items": Json,"schedules": Json }; Returns: undefined
+                           },
+"complete_schedules":
+{ Args: { "completions": Json }; Returns: undefined
+                           },
+"create_building":
+{ Args: { "building": Json,"items": Json,"schedules": Json,"spaces": Json }; Returns: undefined
+                           },
+"save_work":
+{ Args: { "contact_ids": (string)[],"work": Json }; Returns: undefined
+                           }
           }
           Enums: {
             "attachment_kind": "photo"|"receipt"|"manual"|"other","building_type": "house"|"apartment_condo"|"mobile_home"|"rental"|"gym"|"store_cafe"|"office"|"theater","hemisphere": "north"|"south","member_role": "owner"|"member","performed_by": "diy"|"hired","room_kind": "whole_building"|"bedroom"|"bathroom"|"kitchen"|"living"|"hallway"|"laundry"|"garage"|"garden"|"other","work_kind": "project"|"repair","work_status": "idea"|"planning"|"open"|"in_progress"|"done"|"fixed"
