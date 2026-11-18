@@ -10,6 +10,7 @@ import { Pane } from "@/components/layout/pane";
 import { RowMenu } from "@/components/row-menu";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { FilesSection, InlineFiles } from "@/features/files/components/files-section";
 import { formatShortDate } from "@/lib/dates";
 import type { ISODate, Item, LogEntry, Schedule, Space } from "@/lib/domain/models";
 import { formatRepeat } from "@/lib/domain/schedule";
@@ -123,19 +124,26 @@ export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleO
         </ul>
       )}
 
+      <FilesSection buildingId={item.buildingId} target={{ itemId: item.id }} />
+
       <h3 className="text-sm font-bold">History</h3>
       {logs.length === 0 ? (
         <EmptyState>Nothing done yet. Mark a timer done and it shows up here.</EmptyState>
       ) : (
         <ul className="flex flex-col divide-y overflow-hidden surface">
           {logs.map((log) => (
-            <li key={log.id} className="flex items-baseline gap-3 px-3 py-2 text-sm">
-              <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">{formatShortDate(log.doneOn, today)}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{log.title}</span>
-                {log.note && <span className="block truncate text-xs text-muted-foreground">{log.note}</span>}
-              </span>
-              {log.cost !== null && <span className="shrink-0 font-mono text-xs">{formatMoney(log.cost)}</span>}
+            <li key={log.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
+              <div className="flex items-baseline gap-3">
+                <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">{formatShortDate(log.doneOn, today)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{log.title}</span>
+                  {log.note && <span className="block truncate text-xs text-muted-foreground">{log.note}</span>}
+                </span>
+                {log.cost !== null && <span className="shrink-0 font-mono text-xs">{formatMoney(log.cost)}</span>}
+              </div>
+              <div className="pl-23">
+                <InlineFiles buildingId={item.buildingId} target={{ logEntryId: log.id }} label={`${log.title}, ${formatShortDate(log.doneOn, today)}`} />
+              </div>
             </li>
           ))}
         </ul>
@@ -163,7 +171,7 @@ export function ItemDetail({ item, room, rooms, schedules, logs, today, visibleO
         open={dialog?.kind === "delete-item"}
         onOpenChange={close}
         title={`Delete ${item.name}?`}
-        description="Its timers and history are deleted too."
+        description="Its timers, history, and files are deleted too."
         confirmLabel="Delete item"
         onConfirm={() => {
           actions.deleteItem(item.id);

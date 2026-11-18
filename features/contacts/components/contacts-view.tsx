@@ -75,9 +75,9 @@ function Contacts({ data }: { data: AppData }) {
         open={dialog === "add" || dialog === "edit"}
         onOpenChange={close}
         contact={dialog === "edit" ? (shown ?? undefined) : undefined}
-        onSave={(form) => {
-          if (dialog === "edit" && shown) contactActions.update(shown.id, form);
-          else select(contactActions.add(form));
+        onSave={(form, photo) => {
+          if (dialog === "edit" && shown) contactActions.update(shown.id, form, photo);
+          else select(contactActions.add(form, photo));
         }}
       />
       <ConfirmDialog

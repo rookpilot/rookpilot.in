@@ -11,7 +11,7 @@ export const SAMPLE_CONTACTS: Contact[] = [
     phone: "(503) 555-0142",
     email: "dana@ruizdoors.com",
     instagram: "ruizdoors",
-    photoUrl: null,
+    photoPath: null,
     whyWeLikeThem: "Shows up on time, explains the problem before quoting, fair prices. Fixed the opener last year and didn't upsell a new door.",
   },
   {
@@ -22,7 +22,7 @@ export const SAMPLE_CONTACTS: Contact[] = [
     phone: "(503) 555-0178",
     email: "marco.lee@example.com",
     instagram: "marcobuilds",
-    photoUrl: null,
+    photoPath: null,
     whyWeLikeThem: "Knows a bit of everything and lends tools. Great for weekend projects.",
   },
   {
@@ -33,7 +33,7 @@ export const SAMPLE_CONTACTS: Contact[] = [
     phone: "(503) 555-0110",
     email: "priya@anandplumbing.com",
     instagram: "",
-    photoUrl: null,
+    photoPath: null,
     whyWeLikeThem: "Came out same day for the hall sink leak. Clean work, sends photos of what she fixed.",
   },
   {
@@ -44,7 +44,7 @@ export const SAMPLE_CONTACTS: Contact[] = [
     phone: "(503) 555-0190",
     email: "office@topshelfroofing.com",
     instagram: "topshelfroofing",
-    photoUrl: null,
+    photoPath: null,
     whyWeLikeThem: "Did the new roof on time and on budget. Free yearly inspection for past customers.",
   },
 ];

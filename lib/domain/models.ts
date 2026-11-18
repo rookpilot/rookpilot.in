@@ -77,8 +77,8 @@ export interface Contact {
   email: string;
   /** Handle without the @. */
   instagram: string;
-  /** An uploaded photo as a data URL, or null to show initials. */
-  photoUrl: string | null;
+  /** Where the photo is in the contact-photos bucket, or null to show initials. */
+  photoPath: string | null;
   whyWeLikeThem: string;
 }
 
@@ -109,4 +109,22 @@ export interface Work {
   finishedOn: ISODate | null;
   notes: string;
   contactIds: string[];
+}
+
+export type AttachmentKind = "photo" | "receipt" | "manual" | "other";
+
+/** An uploaded file. It belongs to a building and is attached to at most one item, project or repair, or history entry. */
+export interface Attachment {
+  id: string;
+  buildingId: string;
+  itemId: string | null;
+  workId: string | null;
+  logEntryId: string | null;
+  kind: AttachmentKind;
+  /** Where the file is in the attachments bucket. */
+  storagePath: string;
+  /** The name it was uploaded with, shown in lists. */
+  fileName: string;
+  contentType: string;
+  sizeBytes: number | null;
 }
