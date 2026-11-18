@@ -1,22 +1,31 @@
-import { END, START, StateGraph } from "@langchain/langgraph";
+import { END, MemorySaver, START, StateGraph, type BaseCheckpointSaver } from "@langchain/langgraph";
 import { agentNode } from "./nodes/agent";
-import { AgentState } from "./state";
+import { humanReviewNode } from "./nodes/humanReview";
+import { toolsNode } from "./nodes/tools";
+import { AgentState, pendingToolCalls } from "./state";
+import { findTool } from "./tools";
 
-// The Rookpilot chat agent. For now it's one node:
-//
-//   START → agent → END
-//
-// Next, the agent gets tools and loops through them (agent ⇄ tools) until it has an answer.
+export function routeAfterAgent(state: typeof AgentState.State) {
+  const calls = pendingToolCalls(state.messages);
+  if (calls.length === 0) return END;
+  const changesSomething = calls.some((call) => {
+    const kind = findTool(call.name)?.kind;
+    return kind === "write" || kind === "delete";
+  });
+  return changesSomething ? "human_review" : "tools";
+}
 
-export function buildAgentGraph() {
-  return (
-    new StateGraph(AgentState)
-      .addNode("agent", agentNode)
-      .addEdge(START, "agent")
-      .addEdge("agent", END)
-      // Compile checks the wiring (no missing or unreachable nodes) and makes it runnable.
-      .compile()
-  );
+// MemorySaver keeps paused conversations in memory. The app will need one that saves to the database.
+export function buildAgentGraph(checkpointer: BaseCheckpointSaver = new MemorySaver()) {
+  return new StateGraph(AgentState)
+    .addNode("agent", agentNode)
+    .addNode("human_review", humanReviewNode)
+    .addNode("tools", toolsNode)
+    .addEdge(START, "agent")
+    .addConditionalEdges("agent", routeAfterAgent, ["human_review", "tools", END])
+    .addEdge("human_review", "tools")
+    .addEdge("tools", "agent")
+    .compile({ checkpointer });
 }
 
 export const agentGraph = buildAgentGraph();
