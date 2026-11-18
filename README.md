@@ -28,6 +28,7 @@ npm run dev          # http://localhost:3000
 | `npm run db:reset` | Rebuild the local database from the migrations and seed data |
 | `npm run db:test` | Test the database access rules and save functions, then run every kind of save through the app's code (needs local Supabase with seed data) |
 | `npm run db:types` | Regenerate `lib/supabase/database.types.ts` after changing tables |
+| `npm run agent:graph` | Print the chat agent's graph and run a message through it (`-- "your message"` to try your own) |
 
 ## Supabase
 
@@ -71,6 +72,19 @@ npx supabase link --project-ref <project-id>    # the ID in your dashboard URL
 
 Code connects through `lib/supabase/`: `client.ts` in Client Components, `server.ts` in Server Components and Server Actions. `proxy.ts` at the root keeps the login fresh on every request and decides who can open which pages (`lib/supabase/routes.ts`).
 
+## Agent
+
+The chat agent is a LangGraph graph in `lib/agent/`, following the workflow in the product doc: rewriter → planner → worker(s) → synthesizer. Each node is one Claude call (`claude-opus-5-5`) with its own system prompt. The planner answers in a fixed shape that names the worker nodes to run, and the graph routes on it. It runs on the server only, so the API key never reaches the browser.
+
+| File | Job |
+| --- | --- |
+| `llm.ts` | The one place that calls Claude: `ask()` for text, `askFor()` for a typed answer |
+| `state.ts` | The shared state every node reads and returns changes to |
+| `nodes/*.ts` | One file per step, each with its system prompt. Repairs is left to build together (see the TODOs in `nodes/repairs.ts`). |
+| `graph.ts` | Wires the nodes and compiles the graph |
+
+`npm run agent:graph` prints the graph as Mermaid (paste it into https://mermaid.live), then runs a message through it and shows what each node changed. Add `-- "your message"` to try your own. Running a message needs `ANTHROPIC_API_KEY` in `.env.local` and costs a few cents. Tests replace Claude with fakes, so they're free.
+
 ## Routes
 
 `/app` and `/onboarding` need an account. Signed-out people are sent to `/login`, and back to where they were going after they log in.
@@ -112,6 +126,8 @@ lib/templates/        Starter room and item catalogs
 lib/scheduling.ts     Due dates: next due, overdue / due soon, labels, what Mark done does
 lib/calendar.ts       Week and month grid math
 lib/data/             Store, reducer, selectors, and Supabase load/save (sample data is only used by tests)
+lib/agent/            The chat agent (LangGraph): state, one file per node, and graph.ts that wires them
+scripts/              Command-line scripts (agent-graph.ts)
 ```
 
 Components read data through `useAppData()`. Changes go through each feature's `actions.ts` (for example `features/work/actions.ts`), which fill in ids and dates and call `dispatch()` in `lib/data/store.ts`. The store loads everything the signed-in person can see (`lib/data/remote.ts`), shows each change right away through the reducer, then saves it in the background, one change at a time. If a save fails, a toast says so and the data reloads. Saves that touch several tables (onboarding, adding items, Mark done, saving a project or repair) go through database functions, so they save completely or not at all. `lib/data/rows.ts` converts between database rows and the app's types.
