@@ -7,6 +7,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/form/native-select";
 import { itemHref, roomHref } from "@/features/building/routes";
+import { FilesSection } from "@/features/files/components/files-section";
 import { contactHref } from "@/features/contacts/routes";
 import { formatShortDate } from "@/lib/dates";
 import type { Contact, ISODate, Item, Space, Work, WorkStatus } from "@/lib/domain/models";
@@ -129,6 +130,8 @@ export function WorkDetail({ work, space, item, contacts, today, onStatusChange,
           <p className="text-sm whitespace-pre-line text-muted-foreground">{work.notes}</p>
         </section>
       )}
+
+      <FilesSection buildingId={work.buildingId} target={{ workId: work.id }} />
     </div>
   );
 }

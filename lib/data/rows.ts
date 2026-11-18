@@ -1,4 +1,4 @@
-import type { Building, Contact, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
+import type { Attachment, Building, Contact, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
 import type { RepeatRule } from "@/lib/domain/schedule";
 import type { Tables, TablesInsert } from "@/lib/supabase/database.types";
 
@@ -16,6 +16,7 @@ interface RowTables {
   log_entries: Tables<"log_entries"> & { log_entry_contacts: { contact_id: string }[] };
   work: Tables<"work"> & { work_contacts: { contact_id: string }[] };
   contacts: Tables<"contacts">;
+  attachments: Tables<"attachments">;
 }
 
 // Database → app
@@ -116,8 +117,7 @@ export function contactFromRow(row: Row<"contacts">): Contact {
     phone: row.phone,
     email: row.email,
     instagram: row.instagram,
-    // Photos are saved to Storage in a later PR. Until then they last until refresh.
-    photoUrl: null,
+    photoPath: row.photo_path,
     whyWeLikeThem: row.why_we_like_them,
   };
 }
@@ -213,7 +213,6 @@ export function workToRow(work: Partial<Work>): TablesInsert<"work"> {
   }) as TablesInsert<"work">;
 }
 
-/** The photo isn't saved yet (see contactFromRow). */
 export function contactToRow(contact: Partial<Contact>): TablesInsert<"contacts"> {
   return defined({
     id: contact.id,
@@ -223,6 +222,37 @@ export function contactToRow(contact: Partial<Contact>): TablesInsert<"contacts"
     phone: contact.phone,
     email: contact.email,
     instagram: contact.instagram,
+    photo_path: contact.photoPath,
     why_we_like_them: contact.whyWeLikeThem,
   }) as TablesInsert<"contacts">;
+}
+
+export function attachmentFromRow(row: Row<"attachments">): Attachment {
+  return {
+    id: row.id,
+    buildingId: row.building_id,
+    itemId: row.item_id,
+    workId: row.work_id,
+    logEntryId: row.log_entry_id,
+    kind: row.kind,
+    storagePath: row.storage_path,
+    fileName: row.file_name,
+    contentType: row.content_type,
+    sizeBytes: row.size_bytes,
+  };
+}
+
+export function attachmentToRow(attachment: Partial<Attachment>): TablesInsert<"attachments"> {
+  return defined({
+    id: attachment.id,
+    building_id: attachment.buildingId,
+    item_id: attachment.itemId,
+    work_id: attachment.workId,
+    log_entry_id: attachment.logEntryId,
+    kind: attachment.kind,
+    storage_path: attachment.storagePath,
+    file_name: attachment.fileName,
+    content_type: attachment.contentType,
+    size_bytes: attachment.sizeBytes,
+  }) as TablesInsert<"attachments">;
 }

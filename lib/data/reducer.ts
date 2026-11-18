@@ -1,4 +1,4 @@
-import type { Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
+import type { Attachment, Building, Contact, ISODate, Item, LogEntry, Schedule, Space, Work } from "@/lib/domain/models";
 
 import type { AppData, NewItems } from "./types";
 
@@ -30,7 +30,38 @@ export type DataAction =
   | { type: "deleteContact"; id: string }
   | { type: "addWork"; work: Work }
   | { type: "updateWork"; id: string; patch: Partial<Omit<Work, "id" | "buildingId" | "kind">> }
-  | { type: "deleteWork"; id: string };
+  | { type: "deleteWork"; id: string }
+  | { type: "addAttachment"; attachment: Attachment }
+  | { type: "updateAttachment"; id: string; patch: Partial<Pick<Attachment, "fileName" | "kind">> }
+  | { type: "deleteAttachment"; id: string };
+
+/**
+ * Files that a delete takes with it: the database removes their rows, and the app
+ * removes the stored files. Used by the reducer and by the save code.
+ */
+export function attachmentsRemovedBy(state: AppData, action: DataAction): Attachment[] {
+  const itemsWhere = (match: (item: Item) => boolean) => new Set(state.items.filter(match).map((i) => i.id));
+  const filesOfItems = (itemIds: Set<string>) => {
+    const logIds = new Set(state.logs.filter((l) => itemIds.has(l.itemId)).map((l) => l.id));
+    return state.attachments.filter((a) => (a.itemId && itemIds.has(a.itemId)) || (a.logEntryId && logIds.has(a.logEntryId)));
+  };
+  switch (action.type) {
+    case "deleteBuilding":
+      return state.attachments.filter((a) => a.buildingId === action.id);
+    case "deleteSpace":
+      return filesOfItems(itemsWhere((i) => i.spaceId === action.id));
+    case "deleteItem":
+      return filesOfItems(new Set([action.id]));
+    case "deleteWork":
+      return state.attachments.filter((a) => a.workId === action.id);
+    case "deleteLog":
+      return state.attachments.filter((a) => a.logEntryId === action.id);
+    case "deleteAttachment":
+      return state.attachments.filter((a) => a.id === action.id);
+    default:
+      return [];
+  }
+}
 
 function patchById<T extends { id: string }>(list: T[], id: string, patch: NoInfer<Partial<T>>): T[] {
   return list.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry));
@@ -61,6 +92,12 @@ function withoutContact<T extends { contactIds: string[] }>(list: T[], contactId
 }
 
 export function dataReducer(state: AppData, action: DataAction): AppData {
+  const next = applyAction(state, action);
+  const removed = new Set(attachmentsRemovedBy(state, action).map((a) => a.id));
+  return removed.size > 0 ? { ...next, attachments: next.attachments.filter((a) => !removed.has(a.id)) } : next;
+}
+
+function applyAction(state: AppData, action: DataAction): AppData {
   switch (action.type) {
     case "selectBuilding":
       return state.buildings.some((b) => b.id === action.id) ? { ...state, currentBuildingId: action.id } : state;
@@ -159,5 +196,13 @@ export function dataReducer(state: AppData, action: DataAction): AppData {
       return { ...state, work: patchById(state.work, action.id, action.patch) };
     case "deleteWork":
       return { ...state, work: state.work.filter((w) => w.id !== action.id) };
+
+    case "addAttachment":
+      return { ...state, attachments: [...state.attachments, action.attachment] };
+    case "updateAttachment":
+      return { ...state, attachments: patchById(state.attachments, action.id, action.patch) };
+    case "deleteAttachment":
+      // Removed by dataReducer through attachmentsRemovedBy.
+      return state;
   }
 }

@@ -134,7 +134,7 @@ function WorkPage({ kind, data, building }: { kind: WorkKind; data: AppData; bui
         open={dialog === "delete"}
         onOpenChange={close}
         title={`Delete "${shown?.title ?? ""}"?`}
-        description={`This removes the ${info.label.toLowerCase()} from the list, the calendar, and History.`}
+        description={`This removes the ${info.label.toLowerCase()} and its files from the list, the calendar, and History.`}
         confirmLabel={`Delete ${info.label.toLowerCase()}`}
         onConfirm={() => {
           if (!shown) return;

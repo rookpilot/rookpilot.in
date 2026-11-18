@@ -108,7 +108,7 @@ function subscribe(listener: () => void) {
 }
 
 function emptyData(): AppData {
-  return { buildings: [], spaces: [], items: [], schedules: [], logs: [], work: [], contacts: [], currentBuildingId: null, today: toISODate(new Date()) };
+  return { buildings: [], spaces: [], items: [], schedules: [], logs: [], work: [], contacts: [], attachments: [], currentBuildingId: null, today: toISODate(new Date()) };
 }
 
 export function dispatch(action: DataAction) {
