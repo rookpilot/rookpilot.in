@@ -1,36 +1,27 @@
-// Shows the agent graph and runs one message through it.
+// Compiles the agent graph and writes agent-graph.html to see it drawn.
 //
-//   npm run agent:graph                         # the default example
-//   npm run agent:graph -- "my message here"    # try your own
-//
-// Paste the diagram into https://mermaid.live to see it drawn.
-// Running a message calls Claude, so it needs ANTHROPIC_API_KEY in .env.local.
-// With LANGSMITH_TRACING=true (and a key) the run also shows up at smith.langchain.com.
+//   npm run agent:graph && explorer.exe agent-graph.html
 
+import { writeFileSync } from "node:fs";
 import { agentGraph } from "../lib/agent/graph";
-import { lastReply } from "../lib/agent/state";
-
-try {
-  process.loadEnvFile(".env.local");
-} catch {
-  // No .env.local: fine for the diagram.
-}
-
-const message = process.argv[2] ?? "How often should I change my furnace filter?";
 
 async function main() {
-  const drawable = await agentGraph.getGraphAsync();
-  console.log("── Graph (Mermaid) ──────────────────────────\n");
-  console.log(drawable.drawMermaid());
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log("Add ANTHROPIC_API_KEY to .env.local to run a message through the graph.");
-    return;
-  }
-
-  console.log(`── Run: "${message}" ──\n`);
-  const out = await agentGraph.invoke({ messages: [{ role: "user", content: message }] });
-  console.log(`── Reply ──\n\n${lastReply(out.messages)}`);
+  const mermaid = (await agentGraph.getGraphAsync()).drawMermaid();
+  writeFileSync(
+    "agent-graph.html",
+    `<!doctype html>
+<meta charset="utf-8">
+<title>Rookpilot agent graph</title>
+<pre class="mermaid">
+${mermaid}
+</pre>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true });
+</script>
+`,
+  );
+  console.log("Wrote agent-graph.html");
 }
 
 main().catch((error) => {

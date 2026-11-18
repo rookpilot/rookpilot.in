@@ -43,3 +43,6 @@ next-env.d.ts
 
 # supabase studio
 /supabase/snippets/
+
+# npm run agent:graph output
+/agent-graph.html
