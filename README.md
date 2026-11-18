@@ -28,7 +28,7 @@ npm run dev          # http://localhost:3000
 | `npm run db:reset` | Rebuild the local database from the migrations and seed data |
 | `npm run db:test` | Test the database access rules and save functions, then run every kind of save through the app's code (needs local Supabase with seed data) |
 | `npm run db:types` | Regenerate `lib/supabase/database.types.ts` after changing tables |
-| `npm run agent:graph` | Print the chat agent's graph and run a message through it (`-- "your message"` to try your own) |
+| `npm run agent:graph` | Compile the chat agent's graph and write `agent-graph.html` to see it drawn (`&& explorer.exe agent-graph.html` to open it from WSL) |
 
 ## Supabase
 
@@ -90,11 +90,12 @@ The chat agent is a LangGraph graph in `lib/agent/`. Right now it's one node, `S
 | File | Job |
 | --- | --- |
 | `llm.ts` | The one place that calls Claude (`callClaude()`), traced in LangSmith when tracing is on |
-| `state.ts` | The shared state: the conversation as a list of messages |
+| `state.ts` | The shared state: the conversation, and the confirm card answers |
+| `confirm.ts` | When to show the confirm card: the person's 0–100 level, and deletes always ask |
 | `nodes/agent.ts` | The agent node and its system prompt |
 | `graph.ts` | Wires the nodes and compiles the graph |
 
-`npm run agent:graph` prints the graph as Mermaid (paste it into https://mermaid.live), then runs a message through it. Running a message needs `ANTHROPIC_API_KEY` in `.env.local`. To see runs in LangSmith, also set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (see `.env.example`). Tests replace Claude with a fake, so they're free.
+`npm run agent:graph` compiles the graph and writes `agent-graph.html` with the diagram. To see runs in LangSmith, also set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (see `.env.example`). Tests replace Claude with a fake, so they're free.
 
 ## Routes
 
