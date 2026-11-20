@@ -85,14 +85,29 @@ Code connects through `lib/supabase/`: `client.ts` in Client Components, `server
 
 ## Agent
 
-The chat agent is a LangGraph graph in `lib/agent/`. Right now it's one node, `START → agent → END`: the agent is a single Claude call (`claude-opus-5-5`) that gets the whole conversation and adds its reply. Tools come next. It runs on the server only, so the API key never reaches the browser.
+The chat agent is a LangGraph graph in `lib/agent/`: one Claude call (`claude-opus-5-5`) with tools, looping until it has an answer. It runs on the server only, so the API key never reaches the browser.
+
+```
+START → agent ──(no tool calls)──→ END
+          ├──(only reads)──→ tools ──→ agent
+          └──(any change)──→ human_review ──→ tools ──→ agent
+```
+
+- **agent** sees the whole conversation and every tool, and either replies or asks to use tools.
+- **tools** runs the tool calls and sends the results back to the agent.
+- **human_review** is the confirm card: it shows the change Claude wants to make so the person can confirm it, edit its fields, or cancel it. Deletes always get a card. Writes get one when Claude sets `ask_first`, which it decides from the person's confirm level (0 to 100). The graph pauses with `interrupt()` and the app resumes it with the decisions. A checkpointer saves the paused state per conversation (`thread_id`).
+
+The app passes `{ buildingId, confirmLevel }` in the graph's runtime context. Claude never chooses the building.
+
+The 22 tools in `lib/agent/tools/` are basic create/read/update/delete over each tab. Each one is a zod schema plus a kind (read, write, delete). They're stubs for now: every one returns `null`.
 
 | File | Job |
 | --- | --- |
 | `llm.ts` | The one place that calls Claude (`callClaude()`), traced in LangSmith when tracing is on |
 | `state.ts` | The shared state: the conversation, and the confirm card answers |
-| `confirm.ts` | When to show the confirm card: the person's 0–100 level, and deletes always ask |
-| `nodes/agent.ts` | The agent node and its system prompt |
+| `confirm.ts` | When to show the confirm card: the person's level, and deletes always ask |
+| `nodes/` | `agent.ts` (with the system prompt), `tools.ts`, `humanReview.ts` |
+| `tools/` | One file per table, `define.ts` for the shared shape, `index.ts` for the full list |
 | `graph.ts` | Wires the nodes and compiles the graph |
 
 `npm run agent:graph` compiles the graph and writes `agent-graph.html` with the diagram. To see runs in LangSmith, also set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (see `.env.example`). Tests replace Claude with a fake, so they're free.
@@ -138,7 +153,7 @@ lib/templates/        Starter room and item catalogs
 lib/scheduling.ts     Due dates: next due, overdue / due soon, labels, what Mark done does
 lib/calendar.ts       Week and month grid math
 lib/data/             Store, reducer, selectors, and Supabase load/save (sample data is only used by tests)
-lib/agent/            The chat agent (LangGraph): llm.ts, state.ts, nodes/, graph.ts
+lib/agent/            The chat agent (LangGraph): llm.ts, state.ts, confirm.ts, nodes/, tools/, graph.ts
 scripts/              Command-line scripts (agent-graph.ts)
 ```
 
