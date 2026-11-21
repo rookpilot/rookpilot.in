@@ -1,14 +1,18 @@
 import { Command } from "@langchain/langgraph";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Tests never call Claude: callClaude is replaced with a fake, so these check the wiring.
+// Tests never call Claude or Supabase: callClaude is replaced with a fake, and the tools get a
+// made-up building (tools/fakeContext.ts), so these check the wiring.
 vi.mock("./llm", () => ({ callClaude: vi.fn() }));
+vi.mock("./tools/context", () => ({ loadToolContext: vi.fn() }));
 
 import { buildAgentGraph } from "./graph";
 import { callClaude, type Message } from "./llm";
 import type { PendingChange } from "./nodes/humanReview";
 import { lastReply } from "./state";
 import { findTool, TOOLS } from "./tools";
+import { loadToolContext } from "./tools/context";
+import { fakeToolContext } from "./tools/fakeContext";
 
 type Reply = Awaited<ReturnType<typeof callClaude>>;
 
@@ -29,7 +33,7 @@ function claudeCalls(...calls: { name: string; input: Record<string, unknown> }[
 /** A fresh graph and conversation for each test. */
 function setup(confirmLevel?: number) {
   const graph = buildAgentGraph();
-  const config = { configurable: { thread_id: crypto.randomUUID() }, context: { buildingId: "b1", confirmLevel } };
+  const config = { configurable: { thread_id: crypto.randomUUID() }, context: { buildingId: "b1", confirmLevel, today: "2026-11-20" } };
   const send = (content: string) => graph.invoke({ messages: [{ role: "user", content }] }, config);
   const resume = (decisions: Record<string, unknown>) => graph.invoke(new Command({ resume: decisions }), config);
   const pending = async () => {
@@ -51,6 +55,7 @@ const firePit = { kind: "project", title: "Fire pit", status: "idea" };
 describe("agent graph", () => {
   beforeEach(() => vi.restoreAllMocks());
   beforeEach(() => vi.mocked(callClaude).mockReset());
+  beforeEach(() => vi.mocked(loadToolContext).mockImplementation(async () => fakeToolContext()));
 
   it("replies straight away when Claude doesn't need a tool", async () => {
     claudeSays("Every 1 to 3 months.");
@@ -60,22 +65,24 @@ describe("agent graph", () => {
     expect(lastReply(out.messages)).toBe("Every 1 to 3 months.");
   });
 
-  it("tells Claude the person's confirm level", async () => {
+  it("tells Claude today's date and the person's confirm level", async () => {
     claudeSays("Hi!");
     await setup(70).send("hello");
 
-    expect(vi.mocked(callClaude).mock.calls[0][0].system).toContain("The person's confirm level: 70/100.");
+    expect(vi.mocked(callClaude).mock.calls[0][0].system).toContain("Today is 2026-11-20. The person's confirm level: 70/100.");
   });
 
   it("runs reads without asking, then goes back to the agent", async () => {
     claudeCalls({ name: "list_work", input: { kind: "project" } });
-    claudeSays("You don't have any projects yet.");
+    claudeSays("You have one project: Old deck.");
     const { send, pending } = setup();
     const out = await send("what projects do I have?");
 
     expect(await pending()).toBeUndefined();
-    expect(toolResults(out.messages)).toEqual([{ type: "tool_result", tool_use_id: "toolu_0", content: "null" }]);
-    expect(lastReply(out.messages)).toBe("You don't have any projects yet.");
+    const [result] = toolResults(out.messages);
+    expect(result.tool_use_id).toBe("toolu_0");
+    expect(JSON.parse(result.content as string)).toMatchObject([{ id: "deck", title: "Old deck" }]);
+    expect(lastReply(out.messages)).toBe("You have one project: Old deck.");
   });
 
   it("makes a change right away when Claude doesn't ask first", async () => {
@@ -86,7 +93,7 @@ describe("agent graph", () => {
     const out = await send("create me a fire pit project");
 
     expect(await pending()).toBeUndefined();
-    expect(run).toHaveBeenCalledWith(firePit, { buildingId: "b1" });
+    expect(run).toHaveBeenCalledWith(firePit, expect.anything());
     expect(lastReply(out.messages)).toBe("Added Fire pit.");
   });
 
@@ -101,7 +108,7 @@ describe("agent graph", () => {
     claudeSays("Added Fire pit.");
     const out = await resume({ toolu_0: { action: "confirm" } });
 
-    expect(toolResults(out.messages)).toEqual([{ type: "tool_result", tool_use_id: "toolu_0", content: "null" }]);
+    expect(JSON.parse(toolResults(out.messages)[0].content as string)).toMatchObject({ title: "Fire pit", status: "idea" });
     expect(lastReply(out.messages)).toBe("Added Fire pit.");
   });
 
@@ -114,22 +121,38 @@ describe("agent graph", () => {
     claudeSays("Added Backyard fire pit.");
     await resume({ toolu_0: { action: "edit", input: { title: "Backyard fire pit" } } });
 
-    expect(run).toHaveBeenCalledWith({ ...firePit, title: "Backyard fire pit" }, { buildingId: "b1" });
+    expect(run).toHaveBeenCalledWith({ ...firePit, title: "Backyard fire pit" }, expect.anything());
   });
 
   it("always shows the card before a delete, even at the lowest level", async () => {
-    claudeCalls({ name: "delete_work", input: { id: "w1" } });
+    claudeCalls({ name: "delete_work", input: { id: "deck" } });
     const { send, pending } = setup(0);
-    await send("delete the fire pit");
+    await send("delete the old deck");
 
     expect((await pending())?.map((change) => change.tool)).toEqual(["delete_work"]);
   });
 
+  it("says on the card what else a delete takes with it", async () => {
+    claudeCalls({ name: "delete_item", input: { id: "furnace" } });
+    const { send, pending } = setup();
+    await send("delete the furnace");
+
+    expect(await pending()).toEqual([
+      {
+        toolCallId: "toolu_0",
+        tool: "delete_item",
+        kind: "delete",
+        input: { id: "furnace" },
+        effects: "Also deletes 1 schedule, 1 history entry. 1 project or repair stays, unlinked.",
+      },
+    ]);
+  });
+
   it("tells Claude when the person cancels, without running the tool", async () => {
     const run = vi.spyOn(findTool("delete_work")!, "run");
-    claudeCalls({ name: "delete_work", input: { id: "w1" } });
+    claudeCalls({ name: "delete_work", input: { id: "deck" } });
     const { send, resume } = setup();
-    await send("delete the fire pit");
+    await send("delete the old deck");
 
     claudeSays("Okay, I left it.");
     const out = await resume({ toolu_0: { action: "cancel", reason: "wrong one" } });
@@ -142,7 +165,7 @@ describe("agent graph", () => {
     claudeCalls(
       { name: "list_work", input: {} },
       { name: "create_work", input: { ...firePit, ask_first: false } },
-      { name: "delete_work", input: { id: "w1" } },
+      { name: "delete_work", input: { id: "deck" } },
     );
     const { send, resume, pending } = setup();
     await send("list my projects, add a fire pit, and delete the old deck");
@@ -152,6 +175,18 @@ describe("agent graph", () => {
     claudeSays("Done.");
     const out = await resume({ toolu_2: { action: "confirm" } });
     expect(toolResults(out.messages).map((r) => r.tool_use_id)).toEqual(["toolu_0", "toolu_1", "toolu_2"]);
+  });
+
+  it("loads the building once per round of tool calls, and later calls see earlier changes", async () => {
+    claudeCalls(
+      { name: "create_room", input: { name: "Garage", ask_first: false } },
+      { name: "list_rooms", input: {} },
+    );
+    claudeSays("Added the garage.");
+    const out = await setup().send("add a garage");
+
+    expect(loadToolContext).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(toolResults(out.messages)[1].content as string)).toHaveLength(3);
   });
 
   it("sends bad input back to Claude as an error instead of running the tool", async () => {
