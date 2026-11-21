@@ -1,12 +1,23 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import * as z from "zod";
-import type { AgentContext, ToolKind } from "../confirm";
+import type { DataAction } from "@/lib/data/reducer";
+import type { AppData } from "@/lib/data/types";
+import type { Building, ISODate } from "@/lib/domain/models";
+import type { ToolKind } from "../confirm";
 import type { Tool } from "../llm";
 
 // Every agent tool is made with defineTool(), so they all have the same shape.
 
-/** What a tool gets besides its input. Filled in by the graph, never chosen by Claude. */
-export type ToolContext = Pick<AgentContext, "buildingId">;
+/** What a tool gets besides its input. Filled in by the graph, never chosen by Claude (see context.ts). */
+export type ToolContext = {
+  /** The person's current building. Tools only read and change records in this one. */
+  building: Building;
+  today: ISODate;
+  /** Everything the person can see. Kept up to date as the tools save changes. */
+  data: AppData;
+  /** Saves one change with the app's own save code, the same way the app's buttons do. */
+  save: (action: DataAction) => Promise<void>;
+};
 
 export type AgentTool = {
   name: string;
@@ -17,6 +28,8 @@ export type AgentTool = {
   /** Checks Claude's input against the schema and drops ask_first. Throws if it doesn't match. */
   parse: (input: unknown) => unknown;
   run: (input: unknown, context: ToolContext) => Promise<unknown>;
+  /** For deletes: what else goes with the record, shown on the confirm card. */
+  effects?: (input: unknown, context: ToolContext) => string | undefined;
 };
 
 /**
@@ -34,8 +47,9 @@ export function defineTool<Input extends z.ZodObject>(options: {
   description: string;
   input: Input;
   run: (input: z.infer<Input>, context: ToolContext) => Promise<unknown>;
+  effects?: (input: z.infer<Input>, context: ToolContext) => string | undefined;
 }): AgentTool {
-  const { name, kind, description, input, run } = options;
+  const { name, kind, description, input, run, effects } = options;
   const schema = kind === "write" ? input.extend({ ask_first: askFirst }) : input;
 
   // betaZodTool converts the zod schema to the JSON schema the API expects. We run tools
@@ -54,6 +68,7 @@ export function defineTool<Input extends z.ZodObject>(options: {
       return parsed;
     },
     run: (args, context) => run(args as z.infer<Input>, context),
+    ...(effects && { effects: (args: unknown, context: ToolContext) => effects(args as z.infer<Input>, context) }),
   };
 }
 

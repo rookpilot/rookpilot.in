@@ -1,7 +1,9 @@
 import { interrupt, type GraphNode } from "@langchain/langgraph";
 import { needsConfirmation, type ToolKind } from "../confirm";
+import type { AgentContext } from "../context";
 import { pendingToolCalls, type AgentState, type Decision } from "../state";
 import { findTool } from "../tools";
+import { loadToolContext } from "../tools/context";
 
 // human_review: the confirm card. Shows the person the change Claude wants to make, with its
 // fields, so they can confirm it, edit the fields, or cancel it. Not a Claude call.
@@ -20,11 +22,13 @@ export type PendingChange = {
   tool: string;
   kind: Exclude<ToolKind, "read">;
   input: Record<string, unknown>;
+  /** What else goes with it, like the items in a room being deleted. */
+  effects?: string;
 };
 
 export type Decisions = Record<string, Decision>;
 
-export const humanReviewNode: GraphNode<typeof AgentState> = (state) => {
+export const humanReviewNode: GraphNode<typeof AgentState, Partial<AgentContext>> = async (state, config) => {
   const confirmed: Decisions = {};
   const changes: PendingChange[] = [];
 
@@ -40,6 +44,23 @@ export const humanReviewNode: GraphNode<typeof AgentState> = (state) => {
   }
 
   if (changes.length === 0) return { decisions: confirmed };
+  await addEffects(changes, config.context);
   const answers = interrupt<PendingChange[], Decisions>(changes);
   return { decisions: { ...confirmed, ...answers } };
 };
+
+/** Fills in what else each delete takes with it, so the card can say so. */
+async function addEffects(changes: PendingChange[], context: Partial<AgentContext> | undefined) {
+  const withEffects = changes.filter((change) => findTool(change.tool)?.effects);
+  if (withEffects.length === 0) return;
+  const toolContext = await loadToolContext(context);
+  for (const change of withEffects) {
+    const tool = findTool(change.tool)!;
+    try {
+      const effects = tool.effects!(tool.parse(change.input), toolContext);
+      if (effects) change.effects = effects;
+    } catch {
+      // Bad input: the tools node sends the error back to Claude, so the card just shows the change.
+    }
+  }
+}

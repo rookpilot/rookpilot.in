@@ -1,19 +1,23 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { GraphNode } from "@langchain/langgraph";
+import type { AgentContext } from "../context";
 import { pendingToolCalls, type AgentState, type Decision, type ToolCall } from "../state";
 import { findTool, type ToolContext } from "../tools";
+import { loadToolContext } from "../tools/context";
 
 // tools: runs every tool call in Claude's last message, then the graph goes back to the agent.
 // Writes and deletes only get here after human_review, so each one has the person's decision.
 
 type ToolResult = Anthropic.Beta.BetaToolResultBlockParam;
 
-export const toolsNode: GraphNode<typeof AgentState, Partial<ToolContext>> = async (state, config) => {
-  const buildingId = config.context?.buildingId;
-  if (!buildingId) throw new Error("Run the agent with { context: { buildingId } }.");
+export const toolsNode: GraphNode<typeof AgentState, Partial<AgentContext>> = async (state, config) => {
+  const context = await loadToolContext(config.context);
 
-  const calls = pendingToolCalls(state.messages);
-  const results = await Promise.all(calls.map((call) => runOne(call, state.decisions[call.id], { buildingId })));
+  // One at a time, so each call sees the changes the ones before it made.
+  const results: ToolResult[] = [];
+  for (const call of pendingToolCalls(state.messages)) {
+    results.push(await runOne(call, state.decisions[call.id], context));
+  }
 
   // All results go back in one message: the API expects one tool_result for every tool call.
   return { messages: [{ role: "user", content: results }], decisions: {} };

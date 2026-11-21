@@ -4,19 +4,13 @@
 // about every change). Claude reads the level and decides, change by change, whether to ask
 // first. Deletes always ask, whatever the level, because they can't be undone.
 
+import type { AgentContext } from "./context";
+
 /** What a tool does to the records. */
 export type ToolKind = "read" | "write" | "delete";
 
 /** Used until the person picks their own level in settings. */
 export const DEFAULT_CONFIRM_LEVEL = 50;
-
-/** Passed in by the app every time the graph runs. Never chosen by Claude. */
-export type AgentContext = {
-  /** The signed-in person's current building. Every tool reads and changes only this one. */
-  buildingId: string;
-  /** 0 to 100: how often the person wants to confirm changes. */
-  confirmLevel?: number;
-};
 
 /** The person's level, kept within 0 to 100, or the default if they haven't set one. */
 export function confirmLevel(context: Partial<AgentContext> | undefined): number {
