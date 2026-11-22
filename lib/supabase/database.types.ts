@@ -77,6 +77,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"chats": {
+                  Row: {
+                    "building_id": string,"created_at": string,"id": string,"title": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "building_id": string,"created_at"?: string,"id"?: string,"title": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "building_id"?: string,"created_at"?: string,"id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chats_building_id_fkey"
+      columns: ["building_id"]
+isOneToOne: false
+      referencedRelation: "buildings"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"contacts": {
                   Row: {
                     "company": string,"created_at": string,"email": string,"id": string,"instagram": string,"name": string,"owner_id": string,"phone": string,"photo_path": string | null,"trade": string,"why_we_like_them": string
