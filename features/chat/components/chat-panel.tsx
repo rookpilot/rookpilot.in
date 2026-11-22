@@ -11,6 +11,7 @@ import type { Decisions } from "@/lib/agent/nodes/humanReview";
 import type { ChatEntry } from "../hooks/use-chat";
 import type { Step } from "../steps";
 import { ChatInput } from "./chat-input";
+import { ChatMarkdown } from "./chat-markdown";
 import { ConfirmCard } from "./confirm-card";
 import { StepList } from "./step-list";
 
@@ -161,18 +162,19 @@ export function ChatPanel({
                   {entry.role === "assistant" && entry.steps && (
                     <StepList steps={entry.steps} />
                   )}
-                  <p
+                  <div
                     className={cn(
-                      "max-w-[85%] animate-in rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap duration-300 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none",
+                      "max-w-[85%] min-w-0 animate-in rounded-2xl px-3.5 py-2 text-sm break-words duration-300 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none",
                       entry.role === "user"
-                        ? "self-end rounded-br-md bg-foreground text-background"
+                        ? "self-end rounded-br-md bg-foreground whitespace-pre-wrap text-background"
                         : entry.error
                           ? "self-start rounded-bl-md bg-destructive/10 text-destructive"
                           : "self-start rounded-bl-md bg-muted text-foreground",
                     )}
                   >
-                    {entry.text}
-                  </p>
+                    {/* Rookpilot's replies are markdown. What the person typed shows as typed. */}
+                    {entry.role === "assistant" && !entry.error ? <ChatMarkdown>{entry.text}</ChatMarkdown> : entry.text}
+                  </div>
                 </Fragment>
               ),
             )
