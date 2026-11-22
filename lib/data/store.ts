@@ -134,6 +134,11 @@ export function dispatch(action: DataAction) {
   if (!data && signedIn) void load(signedIn);
 }
 
+/** Loads everything again, for changes made somewhere else, like the assistant saving on the server. */
+export function reloadAppData() {
+  if (signedIn) void load(signedIn);
+}
+
 /** All app data, or null while loading. */
 export function useAppData(): AppData | null {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

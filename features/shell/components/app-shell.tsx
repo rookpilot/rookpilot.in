@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ChatLauncher } from "@/features/chat/components/chat-launcher";
 import { ChatPanel } from "@/features/chat/components/chat-panel";
-import { useStubChat } from "@/features/chat/hooks/use-stub-chat";
+import { useChat } from "@/features/chat/hooks/use-chat";
 import { CommandMenu } from "@/features/command/components/command-menu";
 import { useHotkey } from "@/hooks/use-hotkey";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
+import { useCurrentBuilding } from "../hooks/use-current-building";
 import { useSidebarCollapsed } from "../hooks/use-sidebar-collapsed";
 import { ShellProvider } from "../shell-context";
 import { AppSidebar } from "./app-sidebar";
@@ -41,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
-  const chat = useStubChat();
+  const chat = useChat(useCurrentBuilding()?.building?.id ?? null);
   // Matches Tailwind's lg breakpoint, where the chat docks instead of covering the page.
   const wide = useMediaQuery("(min-width: 1024px)");
 
@@ -58,6 +59,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded]);
   useHotkey("k", () => setSearchOpen((open) => !open));
+
+  const chatProps = {
+    entries: chat.entries,
+    thinking: chat.thinking,
+    waitingCard: chat.waitingCard,
+    onSend: chat.send,
+    onAnswer: chat.answer,
+    onNewChat: chat.reset,
+  };
 
   const controls = {
     openChat(prompt?: string) {
@@ -115,8 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <div className={cn("h-full", expanded ? "w-full" : "w-[380px]")}>
               <ChatPanel
-                messages={chat.messages}
-                onSend={chat.send}
+                {...chatProps}
                 onClose={() => setChatOpen(false)}
                 expanded={expanded}
                 onToggleExpanded={() => setChatMode(expanded ? "docked" : "full")}
@@ -138,7 +147,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sheet open={chatOpen && !wide} onOpenChange={setChatOpen}>
           <SheetContent side="right" className="w-full p-0 sm:max-w-md" showCloseButton={false}>
             <SheetTitle className="sr-only">Chat with Rookpilot</SheetTitle>
-            <ChatPanel messages={chat.messages} onSend={chat.send} onClose={() => setChatOpen(false)} />
+            <ChatPanel {...chatProps} onClose={() => setChatOpen(false)} />
           </SheetContent>
         </Sheet>
 

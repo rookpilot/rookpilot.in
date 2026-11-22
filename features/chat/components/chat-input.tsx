@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/button";
 interface ChatInputProps {
   onSend: (text: string) => void;
   placeholder?: string;
+  /** Typing still works, but nothing sends (while Rookpilot is thinking, or a card is waiting). */
+  disabled?: boolean;
 }
 
 /** Enter sends; Shift+Enter adds a new line. */
-export function ChatInput({ onSend, placeholder = "Message Rookpilot…" }: ChatInputProps) {
+export function ChatInput({ onSend, placeholder = "Message Rookpilot…", disabled = false }: ChatInputProps) {
   const [value, setValue] = useState("");
 
   function submit() {
-    if (!value.trim()) return;
+    if (!value.trim() || disabled) return;
     onSend(value);
     setValue("");
   }
@@ -45,7 +47,7 @@ export function ChatInput({ onSend, placeholder = "Message Rookpilot…" }: Chat
         }}
         className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none [field-sizing:content] placeholder:text-muted-foreground"
       />
-      <Button type="submit" size="icon" className="rounded-full" aria-label="Send" disabled={!value.trim()}>
+      <Button type="submit" size="icon" className="rounded-full" aria-label="Send" disabled={!value.trim() || disabled}>
         <ArrowUp />
       </Button>
     </form>
