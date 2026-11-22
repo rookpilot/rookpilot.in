@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./llm", () => ({ callClaude: vi.fn() }));
 vi.mock("./tools/context", () => ({ loadToolContext: vi.fn() }));
 
-import { streamAnswer, streamMessage, type ChatEvent } from "./chat";
+import { chatTitle, streamAnswer, streamMessage, type ChatEvent } from "./chat";
 import { callClaude } from "./llm";
 import type { PendingChange } from "./nodes/humanReview";
 import { loadToolContext } from "./tools/context";
@@ -42,13 +42,28 @@ async function answerCard(supabase: Client, input: unknown) {
   return last.turn;
 }
 
-/** A Supabase client for `userId` (or signed out), who can see the building or not, with their saved chat level. */
+type ChatRow = { id: string; building_id: string; title: string };
+
+/**
+ * A Supabase client for `userId` (or signed out), who can see the building or not, with their saved
+ * chat level. `chats` holds the rows saved to the past chats list.
+ */
 function fakeSupabase({ userId = "user-1" as string | null, seesBuilding = true, confirmMode = "sometimes" } = {}) {
   const rows: Record<string, unknown> = { buildings: seesBuilding ? { id: "x" } : null, profiles: { confirm_mode: confirmMode } };
-  return {
+  const chats: ChatRow[] = [];
+  const chatsTable = {
+    update: () => ({ eq: (_column: string, id: string) => ({ select: async () => ({ data: chats.filter((chat) => chat.id === id), error: null }) }) }),
+    insert: async (row: ChatRow) => {
+      chats.push(row);
+      return { error: null };
+    },
+  };
+  const client = {
     auth: { getClaims: async () => ({ data: userId ? { claims: { sub: userId } } : null }) },
-    from: (table: string) => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: rows[table] }) }) }) }),
+    from: (table: string) =>
+      table === "chats" ? chatsTable : { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: rows[table] }) }) }) },
   } as unknown as Client;
+  return Object.assign(client, { chats });
 }
 
 // Shaped like the seed data's ids, which strict uuid checks reject.
@@ -185,5 +200,33 @@ describe("chat", () => {
     claudeCalls("create_work", newRepair);
     claudeSays("Added it.");
     expect(await sendMessage(fakeSupabase({ confirmMode: "rarely" }), { ...conversation(), text: "add a disposal repair" })).toEqual({ kind: "reply", text: "Added it." });
+  });
+
+  it("adds the chat to the past chats list on its first message, once", async () => {
+    const supabase = fakeSupabase();
+    const chat = conversation();
+    claudeSays("Hi!");
+    claudeSays("Every 1 to 3 months.");
+    await sendMessage(supabase, { ...chat, text: "  hello\n there " });
+    await sendMessage(supabase, { ...chat, text: "how often should I change my filter?" });
+    expect(supabase.chats).toEqual([{ id: chat.threadId, building_id: buildingId, title: "hello there" }]);
+  });
+
+  it("doesn't list the chat when the person can't see the building", async () => {
+    const supabase = fakeSupabase({ seesBuilding: false });
+    await sendMessage(supabase, { ...conversation(), text: "hello" });
+    expect(supabase.chats).toEqual([]);
+  });
+});
+
+describe("chatTitle", () => {
+  it("keeps a short message as it is", () => {
+    expect(chatTitle("add a fire pit project")).toBe("add a fire pit project");
+  });
+
+  it("cuts a long message short", () => {
+    const title = chatTitle("a".repeat(200));
+    expect(title).toHaveLength(80);
+    expect(title.endsWith("…")).toBe(true);
   });
 });

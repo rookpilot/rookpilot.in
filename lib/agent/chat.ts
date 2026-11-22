@@ -70,6 +70,7 @@ export async function* streamMessage(supabase: Client, raw: unknown): AsyncGener
   const config = await configFor(supabase, input.data);
   if ("kind" in config) return yield turn(config);
   if (await pendingChanges(config)) return yield turn(error("Answer the confirm card first."));
+  await saveChat(supabase, input.data);
 
   yield* follow(config, { messages: [{ role: "user", content: input.data.text }] });
 }
@@ -84,6 +85,7 @@ export async function* streamAnswer(supabase: Client, raw: unknown): AsyncGenera
   if (!changes) return yield turn(error("There's nothing waiting for an answer."));
   const { decisions } = input.data;
   if (!changes.every((change) => decisions[change.toolCallId])) return yield turn(error("Answer every change on the card."));
+  await saveChat(supabase, input.data);
 
   // Every tool call Claude made in that round runs now, except the cancelled ones.
   const { values } = await agentGraph.getState(config);
@@ -151,6 +153,30 @@ async function configFor(supabase: Client, input: Conversation): Promise<Config 
     // confirmMode() falls back to the default if the saved value isn't a level.
     context: { buildingId: input.buildingId, supabase, today: input.today, confirmMode: profile?.confirm_mode as ConfirmMode | undefined },
   };
+}
+
+/** Longest chat title before it's cut short. */
+const TITLE_LENGTH = 80;
+
+/** The first message, on one line and cut short, names the chat in the "past chats" list. */
+export function chatTitle(text: string): string {
+  const line = text.replace(/\s+/g, " ").trim();
+  return line.length > TITLE_LENGTH ? `${line.slice(0, TITLE_LENGTH - 1).trimEnd()}…` : line;
+}
+
+/**
+ * Lists the chat in the person's past chats: adds it on the first message, and moves it to the top
+ * after that. The conversation itself is saved by the graph. A failure here only affects the list,
+ * so it's logged and the chat goes on.
+ */
+async function saveChat(supabase: Client, input: Conversation) {
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase.from("chats").update({ updated_at: now }).eq("id", input.threadId).select("id");
+  if (updateError) return console.error("Saving the chat to the list failed", updateError);
+  // Only messages start a chat. An answer always follows a message, so its chat already exists.
+  if (updated.length > 0 || !("text" in input)) return;
+  const { error: insertError } = await supabase.from("chats").insert({ id: input.threadId, building_id: input.buildingId, title: chatTitle(input.text) });
+  if (insertError) console.error("Saving the chat to the list failed", insertError);
 }
 
 async function pendingChanges(config: Config): Promise<PendingChange[] | undefined> {
