@@ -63,6 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const chatProps = {
     entries: chat.entries,
     thinking: chat.thinking,
+    live: chat.live,
     waitingCard: chat.waitingCard,
     onSend: chat.send,
     onAnswer: chat.answer,

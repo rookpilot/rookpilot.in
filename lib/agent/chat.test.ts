@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./llm", () => ({ callClaude: vi.fn() }));
 vi.mock("./tools/context", () => ({ loadToolContext: vi.fn() }));
 
-import { answerCard, sendMessage } from "./chat";
+import { streamAnswer, streamMessage, type ChatEvent } from "./chat";
 import { callClaude } from "./llm";
 import type { PendingChange } from "./nodes/humanReview";
 import { loadToolContext } from "./tools/context";
@@ -16,8 +16,30 @@ type Reply = Awaited<ReturnType<typeof callClaude>>;
 function claudeSays(text: string) {
   vi.mocked(callClaude).mockResolvedValueOnce({ stop_reason: "end_turn", content: [{ type: "text", text, citations: null }] } as unknown as Reply);
 }
-function claudeCalls(name: string, input: Record<string, unknown>) {
-  vi.mocked(callClaude).mockResolvedValueOnce({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_0", name, input }] } as unknown as Reply);
+function claudeCalls(name: string, input: Record<string, unknown>, id = "toolu_0") {
+  vi.mocked(callClaude).mockResolvedValueOnce({ stop_reason: "tool_use", content: [{ type: "tool_use", id, name, input }] } as unknown as Reply);
+}
+
+type Client = Parameters<typeof streamMessage>[0];
+
+async function collect(events: AsyncGenerator<ChatEvent>) {
+  const all: ChatEvent[] = [];
+  for await (const event of events) all.push(event);
+  return all;
+}
+
+/** Runs the stream and returns where it stopped (the turn), like the chat shows it. */
+async function sendMessage(supabase: Client, input: unknown) {
+  const events = await collect(streamMessage(supabase, input));
+  const last = events.at(-1);
+  if (last?.type !== "turn") throw new Error("The stream didn't end with a turn");
+  return last.turn;
+}
+async function answerCard(supabase: Client, input: unknown) {
+  const events = await collect(streamAnswer(supabase, input));
+  const last = events.at(-1);
+  if (last?.type !== "turn") throw new Error("The stream didn't end with a turn");
+  return last.turn;
 }
 
 /** A Supabase client for `userId` (or signed out), who can see the building or not. */
@@ -25,7 +47,7 @@ function fakeSupabase({ userId = "user-1" as string | null, seesBuilding = true 
   return {
     auth: { getClaims: async () => ({ data: userId ? { claims: { sub: userId } } : null }) },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: seesBuilding ? { id: "x" } : null }) }) }) }),
-  } as unknown as Parameters<typeof sendMessage>[0];
+  } as unknown as Client;
 }
 
 // Shaped like the seed data's ids, which strict uuid checks reject.
@@ -105,5 +127,51 @@ describe("chat", () => {
     vi.mocked(callClaude).mockRejectedValueOnce(new Error("overloaded"));
     const turn = await sendMessage(fakeSupabase(), { ...conversation(), text: "hi" });
     expect(turn).toEqual({ kind: "error", message: "Something went wrong. Try again in a moment." });
+  });
+
+  it("sends a step for each tool as it starts and finishes, then the reply", async () => {
+    claudeCalls("list_work", { kind: "repair" });
+    claudeSays("You have one repair.");
+    const events = await collect(streamMessage(fakeSupabase(), { ...conversation(), text: "what repairs do I have?" }));
+
+    expect(events).toEqual([
+      { type: "step", id: "toolu_0", tool: "list_work", input: { kind: "repair" } },
+      { type: "step_done", id: "toolu_0", ok: true },
+      { type: "turn", turn: { kind: "reply", text: "You have one repair." } },
+    ]);
+  });
+
+  it("leaves a carded change unfinished, then runs it once the person answers", async () => {
+    const supabase = fakeSupabase();
+    const chat = conversation();
+    claudeCalls("create_work", firePit);
+    const first = await collect(streamMessage(supabase, { ...chat, text: "add a fire pit project" }));
+    expect(first.map((e) => e.type)).toEqual(["step", "turn"]);
+
+    claudeSays("Added Backyard fire pit.");
+    const second = await collect(streamAnswer(supabase, { ...chat, decisions: { toolu_0: { action: "edit", input: { title: "Backyard fire pit" } } } }));
+    expect(second).toEqual([
+      { type: "step", id: "toolu_0", tool: "create_work", input: { kind: "project", title: "Backyard fire pit" } },
+      { type: "step_done", id: "toolu_0", ok: true },
+      { type: "turn", turn: { kind: "reply", text: "Added Backyard fire pit." } },
+    ]);
+  });
+
+  it("doesn't show a step for a cancelled change", async () => {
+    const supabase = fakeSupabase();
+    const chat = conversation();
+    claudeCalls("delete_work", { id: "deck" });
+    await collect(streamMessage(supabase, { ...chat, text: "delete the old deck" }));
+
+    claudeSays("Okay, I left it.");
+    const events = await collect(streamAnswer(supabase, { ...chat, decisions: { toolu_0: { action: "cancel" } } }));
+    expect(events.filter((e) => e.type === "step")).toEqual([]);
+  });
+
+  it("marks a step that failed", async () => {
+    claudeCalls("update_work", { id: "other-work", title: "Mine", ask_first: false });
+    claudeSays("I couldn't find that one.");
+    const events = await collect(streamMessage(fakeSupabase(), { ...conversation(), text: "rename their patio" }));
+    expect(events).toContainEqual({ type: "step_done", id: "toolu_0", ok: false });
   });
 });

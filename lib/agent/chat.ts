@@ -1,3 +1,4 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import { Command } from "@langchain/langgraph";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import * as z from "zod";
@@ -5,13 +6,13 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { AgentContext } from "./context";
 import { agentGraph } from "./graph";
 import type { PendingChange } from "./nodes/humanReview";
-import { lastReply } from "./state";
+import type { Message } from "./llm";
+import { lastReply, pendingToolCalls, type ToolCall } from "./state";
 
-// What the chat calls (through the server actions in features/chat/actions.ts). Each call
-// checks who's asking and what they sent, runs the graph, and returns one of:
-// - a reply to show
-// - changes waiting on the confirm card (the graph is paused until answerCard)
-// - an error to show instead
+// What the chat calls (through the streaming route in app/api/chat/route.ts). Each call checks
+// who's asking and what they sent, runs the graph, and sends events as it goes:
+// - a step for each tool Claude uses, and when it's done, so the chat can show progress
+// - then exactly one turn: a reply, changes waiting on the confirm card, or an error
 
 export type ChatTurn =
   | { kind: "reply"; text: string }
@@ -40,56 +41,98 @@ const answerInput = z.object({ ...conversation, decisions: z.record(z.string(), 
 
 export type MessageInput = z.input<typeof messageInput>;
 export type AnswerInput = z.input<typeof answerInput>;
+/** What the chat posts to the route. */
+export type ChatRequest = { action: "message"; input: MessageInput } | { action: "answer"; input: AnswerInput };
+
+export type ChatEvent =
+  /** Claude asked to use a tool. */
+  | { type: "step"; id: string; tool: string; input: Record<string, unknown> }
+  /** That tool finished. `ok` is false when it failed. */
+  | { type: "step_done"; id: string; ok: boolean }
+  /** Where the run stopped. Always the last event. */
+  | { type: "turn"; turn: ChatTurn };
 
 const error = (message: string): ChatTurn => ({ kind: "error", message });
 const FAILED = error("Something went wrong. Try again in a moment.");
+const turn = (value: ChatTurn): ChatEvent => ({ type: "turn", turn: value });
+
+function step(call: ToolCall, edits?: Record<string, unknown>): ChatEvent {
+  const input: Record<string, unknown> = { ...(call.input as Record<string, unknown>), ...edits };
+  delete input.ask_first;
+  return { type: "step", id: call.id, tool: call.name, input };
+}
 
 /** Sends the person's message and runs the agent until it replies or needs the confirm card. */
-export async function sendMessage(supabase: Client, raw: unknown): Promise<ChatTurn> {
+export async function* streamMessage(supabase: Client, raw: unknown): AsyncGenerator<ChatEvent> {
   const input = messageInput.safeParse(raw);
-  if (!input.success) return error("That message couldn't be sent.");
-  return run(supabase, input.data, async (config) => {
-    if (await pendingChanges(config)) return error("Answer the confirm card first.");
-    await agentGraph.invoke({ messages: [{ role: "user", content: input.data.text }] }, config);
-  });
+  if (!input.success) return yield turn(error("That message couldn't be sent."));
+  const config = await configFor(supabase, input.data);
+  if ("kind" in config) return yield turn(config);
+  if (await pendingChanges(config)) return yield turn(error("Answer the confirm card first."));
+
+  yield* follow(config, { messages: [{ role: "user", content: input.data.text }] });
 }
 
 /** Answers the confirm card and runs the agent on from where it paused. */
-export async function answerCard(supabase: Client, raw: unknown): Promise<ChatTurn> {
+export async function* streamAnswer(supabase: Client, raw: unknown): AsyncGenerator<ChatEvent> {
   const input = answerInput.safeParse(raw);
-  if (!input.success) return error("That answer couldn't be sent.");
-  return run(supabase, input.data, async (config) => {
-    const changes = await pendingChanges(config);
-    if (!changes) return error("There's nothing waiting for an answer.");
-    const answered = changes.every((change) => input.data.decisions[change.toolCallId]);
-    if (!answered) return error("Answer every change on the card.");
-    await agentGraph.invoke(new Command({ resume: input.data.decisions }), config);
-  });
+  if (!input.success) return yield turn(error("That answer couldn't be sent."));
+  const config = await configFor(supabase, input.data);
+  if ("kind" in config) return yield turn(config);
+  const changes = await pendingChanges(config);
+  if (!changes) return yield turn(error("There's nothing waiting for an answer."));
+  const { decisions } = input.data;
+  if (!changes.every((change) => decisions[change.toolCallId])) return yield turn(error("Answer every change on the card."));
+
+  // Every tool call Claude made in that round runs now, except the cancelled ones.
+  const { values } = await agentGraph.getState(config);
+  for (const call of pendingToolCalls(values.messages)) {
+    const decision = decisions[call.id];
+    if (decision?.action !== "cancel") yield step(call, decision?.action === "edit" ? decision.input : undefined);
+  }
+  yield* follow(config, new Command({ resume: decisions }));
 }
 
 type Conversation = z.infer<typeof messageInput> | z.infer<typeof answerInput>;
 type Config = { configurable: { thread_id: string }; context: AgentContext };
+/** What one node changed, from stream({ streamMode: "updates" }). */
+type Update = Record<string, { messages?: Message[] } | undefined>;
 
-/** Runs one step of the conversation, then reads where the graph stopped: a reply, or the card. */
-async function run(supabase: Client, input: Conversation, step: (config: Config) => Promise<ChatTurn | void>): Promise<ChatTurn> {
-  const config = await configFor(supabase, input);
-  if ("kind" in config) return config;
+/** Runs the graph, sending a step for each tool as it starts and finishes, then where it stopped. */
+async function* follow(config: Config, graphInput: Parameters<typeof agentGraph.stream>[0]): AsyncGenerator<ChatEvent> {
   try {
-    const stopped = await step(config);
-    if (stopped) return stopped;
+    const updates = await agentGraph.stream(graphInput, { ...config, streamMode: "updates" });
+    for await (const update of updates as AsyncIterable<Update>) {
+      for (const call of pendingToolCalls(update.agent?.messages ?? [])) yield step(call);
+      for (const result of toolResults(update.tools?.messages ?? [])) {
+        yield { type: "step_done", id: result.tool_use_id, ok: !result.is_error };
+      }
+    }
+
     const changes = await pendingChanges(config);
-    if (changes) return { kind: "confirm", changes };
+    if (changes) return yield turn({ kind: "confirm", changes });
     const state = await agentGraph.getState(config);
-    return { kind: "reply", text: lastReply(state.values.messages) };
+    yield turn({ kind: "reply", text: lastReply(state.values.messages) });
   } catch (cause) {
     console.error("Agent run failed", cause);
-    return FAILED;
+    yield turn(FAILED);
   }
+}
+
+type ToolResult = Anthropic.Beta.BetaToolResultBlockParam;
+
+function toolResults(messages: Message[]): ToolResult[] {
+  const results: ToolResult[] = [];
+  for (const message of messages) {
+    if (!Array.isArray(message.content)) continue;
+    for (const block of message.content) if (block.type === "tool_result") results.push(block);
+  }
+  return results;
 }
 
 /** Checks the person is signed in and can see the building, then builds the graph's config. */
 async function configFor(supabase: Client, input: Conversation): Promise<Config | ChatTurn> {
-  // A server action can be called directly, so this can't rely on the page having checked.
+  // The route can be called directly, so this can't rely on the page having checked.
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) return error("You're signed out. Sign in again to keep chatting.");

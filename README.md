@@ -110,9 +110,9 @@ The 22 tools in `lib/agent/tools/` are basic create/read/update/delete over each
 | `nodes/` | `agent.ts` (with the system prompt), `tools.ts`, `humanReview.ts` |
 | `tools/` | One file per table, `define.ts` for the shared shape, `records.ts` for lookups and what Claude sees, `context.ts` to load data and save changes, `index.ts` for the full list |
 | `graph.ts` | Wires the nodes and compiles the graph |
-| `chat.ts` | What the chat calls: checks the person and their input, runs the graph, and returns a reply, the confirm card, or an error |
+| `chat.ts` | What the chat calls: checks the person and their input, runs the graph, and streams events: a step for each tool, then a reply, the confirm card, or an error |
 
-The chat reaches the agent through two server actions in `features/chat/actions.ts`: `sendMessage` and `answerCard` (for the confirm card). Each one checks the person is signed in and can see the building, because a server action can be called directly. Conversations are tied to the person, so nobody can pick up someone else's.
+The chat reaches the agent through `POST /api/chat` (`app/api/chat/route.ts`), which streams those events one JSON object per line, so the chat shows each step ("Checking your repairs…") as it happens. Each request checks the person is signed in and can see the building, because the route can be called directly. Conversations are tied to the person, so nobody can pick up someone else's.
 
 `npm run agent:graph` compiles the graph and writes `agent-graph.html` with the diagram. To see runs in LangSmith, also set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (see `.env.example`). Tests replace Claude with a fake and Supabase with a made-up building (`tools/fakeContext.ts`), so they're free.
 
