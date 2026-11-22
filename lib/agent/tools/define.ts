@@ -3,7 +3,7 @@ import * as z from "zod";
 import type { DataAction } from "@/lib/data/reducer";
 import type { AppData } from "@/lib/data/types";
 import type { Building, ISODate } from "@/lib/domain/models";
-import type { ToolKind } from "../confirm";
+import type { ChangeType, ToolKind } from "../confirm";
 import type { Tool } from "../llm";
 
 // Every agent tool is made with defineTool(), so they all have the same shape.
@@ -25,7 +25,9 @@ export type AgentTool = {
   kind: ToolKind;
   /** What gets sent to Claude: name, description, and the input's JSON schema. */
   definition: Tool;
-  /** Checks Claude's input against the schema and drops ask_first. Throws if it doesn't match. */
+  /** For writes and deletes: what this change does, which decides whether it gets a card (see confirm.ts). */
+  change: (input: Record<string, unknown>) => ChangeType;
+  /** Checks Claude's input against the schema and drops guessed. Throws if it doesn't match. */
   parse: (input: unknown) => unknown;
   run: (input: unknown, context: ToolContext) => Promise<unknown>;
   /** For deletes: what else goes with the record, shown on the confirm card. */
@@ -33,16 +35,21 @@ export type AgentTool = {
 };
 
 /**
- * Added to every write tool, so Claude decides on each change whether to show the confirm card
- * (see confirm.ts). Deletes always show it, so they don't get this field.
+ * Added to every write tool. Claude says whether it filled anything in, and a guess always gets
+ * the confirm card (see confirm.ts). Deletes always get a card, so they don't have this field.
  */
-const askFirst = z
+const guessed = z
   .boolean()
-  .describe("true to show the person a confirm card before this runs, false to make the change right away. Follow the confirm level in your instructions.");
+  .describe("true if you filled in anything the person didn't say and you couldn't look up, like picking a room, a date, or a name for them. false if every value came from the person or a list tool.");
 
 export function defineTool<Input extends z.ZodObject>(options: {
   name: string;
   kind: ToolKind;
+  /**
+   * For writes: what the change does. Defaults to "new" for create_ tools and "edit" for the rest.
+   * Quick actions, like marking something done, say so here.
+   */
+  change?: Exclude<ChangeType, "delete"> | ((input: Record<string, unknown>) => Exclude<ChangeType, "delete">);
   /** Claude reads this to decide when to call the tool, so say what it's for and when to use it. */
   description: string;
   input: Input;
@@ -50,7 +57,8 @@ export function defineTool<Input extends z.ZodObject>(options: {
   effects?: (input: z.infer<Input>, context: ToolContext) => string | undefined;
 }): AgentTool {
   const { name, kind, description, input, run, effects } = options;
-  const schema = kind === "write" ? input.extend({ ask_first: askFirst }) : input;
+  const schema = kind === "write" ? input.extend({ guessed }) : input;
+  const change = options.change ?? (name.startsWith("create_") ? "new" : "edit");
 
   // betaZodTool converts the zod schema to the JSON schema the API expects. We run tools
   // ourselves in the tools node, so only the schema is used.
@@ -62,9 +70,10 @@ export function defineTool<Input extends z.ZodObject>(options: {
     name,
     kind,
     definition: { name, description, input_schema },
+    change: (args) => (kind === "delete" ? "delete" : typeof change === "function" ? change(args) : change),
     parse: (value) => {
       const parsed = schema.parse(value) as Record<string, unknown>;
-      delete parsed.ask_first;
+      delete parsed.guessed;
       return parsed;
     },
     run: (args, context) => run(args as z.infer<Input>, context),
