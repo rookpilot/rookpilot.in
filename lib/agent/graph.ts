@@ -1,4 +1,5 @@
 import { END, MemorySaver, START, StateGraph, type BaseCheckpointSaver } from "@langchain/langgraph";
+import { createCheckpointer } from "./checkpointer";
 import { agentNode } from "./nodes/agent";
 import { humanReviewNode } from "./nodes/humanReview";
 import { toolsNode } from "./nodes/tools";
@@ -15,7 +16,7 @@ export function routeAfterAgent(state: typeof AgentState.State) {
   return changesSomething ? "human_review" : "tools";
 }
 
-// MemorySaver keeps paused conversations in memory. The app will need one that saves to the database.
+// Tests pass nothing and get a fresh in-memory saver. The app saves to the database (checkpointer.ts).
 export function buildAgentGraph(checkpointer: BaseCheckpointSaver = new MemorySaver()) {
   return new StateGraph(AgentState)
     .addNode("agent", agentNode)
@@ -28,4 +29,4 @@ export function buildAgentGraph(checkpointer: BaseCheckpointSaver = new MemorySa
     .compile({ checkpointer });
 }
 
-export const agentGraph = buildAgentGraph();
+export const agentGraph = buildAgentGraph(createCheckpointer());
