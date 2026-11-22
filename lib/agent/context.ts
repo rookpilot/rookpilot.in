@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toISODate } from "@/lib/dates";
 import type { ISODate } from "@/lib/domain/models";
+import type { ConfirmMode } from "./confirm";
 import type { Database } from "@/lib/supabase/database.types";
 
 /** Passed in by the app every time the graph runs. Never chosen by Claude. */
@@ -9,8 +10,8 @@ export type AgentContext = {
   buildingId: string;
   /** The signed-in person's Supabase client, so the access rules decide what the tools can see and change. */
   supabase: SupabaseClient<Database>;
-  /** 0 to 100: how often the person wants to confirm changes. */
-  confirmLevel?: number;
+  /** How often the person wants to confirm changes. Defaults to "sometimes". */
+  confirmMode?: ConfirmMode;
   /** The person's date, from their browser. Defaults to the server's. */
   today?: ISODate;
 };

@@ -95,9 +95,9 @@ START → agent ──(no tool calls)──→ END
 
 - **agent** sees the whole conversation and every tool, and either replies or asks to use tools.
 - **tools** runs the tool calls and sends the results back to the agent.
-- **human_review** is the confirm card: it shows the change Claude wants to make so the person can confirm it, edit its fields, or cancel it. Deletes always get a card. Writes get one when Claude sets `ask_first`, which it decides from the person's confirm level (0 to 100). The graph pauses with `interrupt()` and the app resumes it with the decisions. A checkpointer saves the paused state per conversation (`thread_id`).
+- **human_review** is the confirm card: it shows the change Claude wants to make so the person can confirm it, edit its fields, or cancel it. Whether a change gets a card depends on the person's level (rarely, sometimes, always), the type of change, and whether Claude guessed anything (see the table in `confirm.ts`). Deletes and guesses always get one. The graph pauses with `interrupt()` and the app resumes it with the decisions. A checkpointer saves the paused state per conversation (`thread_id`).
 
-The app passes `{ buildingId, supabase, confirmLevel, today }` in the graph's runtime context. `supabase` is the signed-in person's client, so the access rules still decide what the agent can see and change. Claude never chooses the building, and a tool given an id from another building returns an error.
+The app passes `{ buildingId, supabase, confirmMode, today }` in the graph's runtime context. `supabase` is the signed-in person's client, so the access rules still decide what the agent can see and change. Claude never chooses the building, and a tool given an id from another building returns an error.
 
 The 22 tools in `lib/agent/tools/` are basic create/read/update/delete over each tab. Each one is a zod schema plus a kind (read, write, delete). Each round of tool calls loads the person's data once (`loadAppData`). Changes are saved with the same code as the app's buttons (`persist`), so a delete removes the same things it would in the app. Dates the person leaves out are filled in from today. For example, a schedule that repeats every 3 months is first due 3 months from today, and a project marked done is finished today.
 
@@ -106,7 +106,7 @@ The 22 tools in `lib/agent/tools/` are basic create/read/update/delete over each
 | `llm.ts` | The one place that calls Claude (`callClaude()`), traced in LangSmith when tracing is on |
 | `state.ts` | The shared state: the conversation, and the confirm card answers |
 | `context.ts` | What the app passes in each run |
-| `confirm.ts` | When to show the confirm card: the person's level, and deletes always ask |
+| `confirm.ts` | When to show the confirm card: the person's level, the type of change, and whether Claude guessed |
 | `nodes/` | `agent.ts` (with the system prompt), `tools.ts`, `humanReview.ts` |
 | `tools/` | One file per table, `define.ts` for the shared shape, `records.ts` for lookups and what Claude sees, `context.ts` to load data and save changes, `index.ts` for the full list |
 | `graph.ts` | Wires the nodes and compiles the graph |

@@ -1,5 +1,5 @@
 import { interrupt, type GraphNode } from "@langchain/langgraph";
-import { needsConfirmation, type ToolKind } from "../confirm";
+import { confirmMode, needsConfirmation, type ToolKind } from "../confirm";
 import type { AgentContext } from "../context";
 import { pendingToolCalls, type AgentState, type Decision } from "../state";
 import { findTool } from "../tools";
@@ -8,9 +8,10 @@ import { loadToolContext } from "../tools/context";
 // human_review: the confirm card. Shows the person the change Claude wants to make, with its
 // fields, so they can confirm it, edit the fields, or cancel it. Not a Claude call.
 //
-// Every write and delete comes through here. Deletes always get a card. Writes get one when
-// Claude set ask_first, which it decides from the person's confirm level. Changes that don't
-// need a card are confirmed right away, and if none need one, the graph doesn't pause.
+// Every write and delete comes through here. Whether a change gets a card depends on the
+// person's level (rarely, sometimes, always), the type of change, and whether Claude guessed
+// anything (see confirm.ts). Changes that don't need a card are confirmed right away, and if
+// none need one, the graph doesn't pause.
 //
 // interrupt() is LangGraph's human-in-the-loop pause: it saves the graph's state and stops.
 // The app resumes it with new Command({ resume: { [toolCallId]: decision } }). On resume this
@@ -33,10 +34,11 @@ export const humanReviewNode: GraphNode<typeof AgentState, Partial<AgentContext>
   const changes: PendingChange[] = [];
 
   for (const call of pendingToolCalls(state.messages)) {
-    const kind = findTool(call.name)?.kind;
-    if (kind !== "write" && kind !== "delete") continue;
-    const { ask_first, ...input } = call.input as Record<string, unknown>;
-    if (needsConfirmation(kind, ask_first === true)) {
+    const tool = findTool(call.name);
+    const kind = tool?.kind;
+    if (!tool || (kind !== "write" && kind !== "delete")) continue;
+    const { guessed, ...input } = call.input as Record<string, unknown>;
+    if (needsConfirmation(confirmMode(config.context), tool.change(input), guessed === true)) {
       changes.push({ toolCallId: call.id, tool: call.name, kind, input });
     } else {
       confirmed[call.id] = { action: "confirm" };

@@ -58,7 +58,7 @@ const turn = (value: ChatTurn): ChatEvent => ({ type: "turn", turn: value });
 
 function step(call: ToolCall, edits?: Record<string, unknown>): ChatEvent {
   const input: Record<string, unknown> = { ...(call.input as Record<string, unknown>), ...edits };
-  delete input.ask_first;
+  delete input.guessed;
   return { type: "step", id: call.id, tool: call.name, input };
 }
 

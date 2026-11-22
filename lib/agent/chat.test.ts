@@ -53,7 +53,7 @@ function fakeSupabase({ userId = "user-1" as string | null, seesBuilding = true 
 // Shaped like the seed data's ids, which strict uuid checks reject.
 const buildingId = "11111111-1111-1111-1111-111111111111";
 const conversation = () => ({ threadId: crypto.randomUUID(), buildingId, today: "2026-11-20" });
-const firePit = { kind: "project", title: "Fire pit", ask_first: true };
+const firePit = { kind: "project", title: "Fire pit", guessed: true };
 
 describe("chat", () => {
   beforeEach(() => {
@@ -169,9 +169,10 @@ describe("chat", () => {
   });
 
   it("marks a step that failed", async () => {
-    claudeCalls("update_work", { id: "other-work", title: "Mine", ask_first: false });
+    // A quick action, so it runs without a card at the default level and fails on the other building's id.
+    claudeCalls("complete_schedule", { id: "other-schedule", guessed: false });
     claudeSays("I couldn't find that one.");
-    const events = await collect(streamMessage(fakeSupabase(), { ...conversation(), text: "rename their patio" }));
+    const events = await collect(streamMessage(fakeSupabase(), { ...conversation(), text: "I cleaned their coils" }));
     expect(events).toContainEqual({ type: "step_done", id: "toolu_0", ok: false });
   });
 });

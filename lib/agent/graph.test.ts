@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./llm", () => ({ callClaude: vi.fn() }));
 vi.mock("./tools/context", () => ({ loadToolContext: vi.fn() }));
 
+import type { ConfirmMode } from "./confirm";
 import { buildAgentGraph } from "./graph";
 import { callClaude, type Message } from "./llm";
 import type { PendingChange } from "./nodes/humanReview";
@@ -31,9 +32,9 @@ function claudeCalls(...calls: { name: string; input: Record<string, unknown> }[
 }
 
 /** A fresh graph and conversation for each test. */
-function setup(confirmLevel?: number) {
+function setup(confirmMode?: ConfirmMode) {
   const graph = buildAgentGraph();
-  const config = { configurable: { thread_id: crypto.randomUUID() }, context: { buildingId: "b1", confirmLevel, today: "2026-11-20" } };
+  const config = { configurable: { thread_id: crypto.randomUUID() }, context: { buildingId: "b1", confirmMode, today: "2026-11-20" } };
   const send = (content: string) => graph.invoke({ messages: [{ role: "user", content }] }, config);
   const resume = (decisions: Record<string, unknown>) => graph.invoke(new Command({ resume: decisions }), config);
   const pending = async () => {
@@ -65,11 +66,13 @@ describe("agent graph", () => {
     expect(lastReply(out.messages)).toBe("Every 1 to 3 months.");
   });
 
-  it("tells Claude today's date and the person's confirm level", async () => {
+  it("tells Claude today's date, but not the person's level: the code decides about cards", async () => {
     claudeSays("Hi!");
-    await setup(70).send("hello");
+    await setup("always").send("hello");
 
-    expect(vi.mocked(callClaude).mock.calls[0][0].system).toContain("Today is 2026-11-20. The person's confirm level: 70/100.");
+    const { system } = vi.mocked(callClaude).mock.calls[0][0];
+    expect(system).toContain("Today is 2026-11-20.");
+    expect(system).not.toContain("always");
   });
 
   it("runs reads without asking, then goes back to the agent", async () => {
@@ -85,11 +88,11 @@ describe("agent graph", () => {
     expect(lastReply(out.messages)).toBe("You have one project: Old deck.");
   });
 
-  it("makes a change right away when Claude doesn't ask first", async () => {
+  it("adds a new record right away at rarely, when nothing was guessed", async () => {
     const run = vi.spyOn(findTool("create_work")!, "run");
-    claudeCalls({ name: "create_work", input: { ...firePit, ask_first: false } });
+    claudeCalls({ name: "create_work", input: { ...firePit, guessed: false } });
     claudeSays("Added Fire pit.");
-    const { send, pending } = setup(10);
+    const { send, pending } = setup("rarely");
     const out = await send("create me a fire pit project");
 
     expect(await pending()).toBeUndefined();
@@ -97,9 +100,39 @@ describe("agent graph", () => {
     expect(lastReply(out.messages)).toBe("Added Fire pit.");
   });
 
-  it("shows the card when Claude asks first, and runs the change once confirmed", async () => {
-    claudeCalls({ name: "create_work", input: { ...firePit, ask_first: true } });
-    const { send, resume, pending } = setup(90);
+  it("shows the card for a new record at sometimes, even when nothing was guessed", async () => {
+    claudeCalls({ name: "create_work", input: { kind: "repair", title: "Fix garbage disposal", room_id: "kitchen", guessed: false } });
+    const { send, pending } = setup();
+    await send("make a repair for fixing my garbage disposal in the kitchen");
+
+    expect((await pending())?.map((change) => change.tool)).toEqual(["create_work"]);
+  });
+
+  it("lets quick actions through at sometimes, but shows them at always", async () => {
+    for (const [mode, card] of [["sometimes", false], ["always", true]] as const) {
+      claudeCalls({ name: "complete_schedule", input: { id: "filter", guessed: false } });
+      claudeCalls({ name: "update_schedule", input: { id: "filter", next_due_on: "2027-01-15", guessed: false } });
+      claudeSays("Done.");
+      claudeSays("Done.");
+      const { send, pending } = setup(mode);
+      await send("I changed the filter");
+      expect(Boolean(await pending()), `complete at ${mode}`).toBe(card);
+      if (card) continue;
+      await send("snooze it to mid January");
+      expect(await pending(), `snooze at ${mode}`).toBeUndefined();
+    }
+  });
+
+  it("treats changing what a schedule is as an edit, not a quick action", async () => {
+    claudeCalls({ name: "update_schedule", input: { id: "filter", title: "Replace HEPA filter", guessed: false } });
+    const { send, pending } = setup();
+    await send("call it the HEPA filter");
+    expect((await pending())?.map((change) => change.tool)).toEqual(["update_schedule"]);
+  });
+
+  it("shows the card when Claude guessed something, even at rarely, and runs it once confirmed", async () => {
+    claudeCalls({ name: "create_work", input: { ...firePit, guessed: true } });
+    const { send, resume, pending } = setup("rarely");
     await send("create me a fire pit project");
 
     expect(await pending()).toEqual([{ toolCallId: "toolu_0", tool: "create_work", kind: "write", input: firePit }]);
@@ -114,7 +147,7 @@ describe("agent graph", () => {
 
   it("runs an edited change with the person's fields", async () => {
     const run = vi.spyOn(findTool("create_work")!, "run");
-    claudeCalls({ name: "create_work", input: { ...firePit, ask_first: true } });
+    claudeCalls({ name: "create_work", input: { ...firePit, guessed: true } });
     const { send, resume } = setup();
     await send("create me a fire pit project");
 
@@ -126,7 +159,7 @@ describe("agent graph", () => {
 
   it("always shows the card before a delete, even at the lowest level", async () => {
     claudeCalls({ name: "delete_work", input: { id: "deck" } });
-    const { send, pending } = setup(0);
+    const { send, pending } = setup("rarely");
     await send("delete the old deck");
 
     expect((await pending())?.map((change) => change.tool)).toEqual(["delete_work"]);
@@ -164,10 +197,10 @@ describe("agent graph", () => {
   it("only puts the changes that need it on the card", async () => {
     claudeCalls(
       { name: "list_work", input: {} },
-      { name: "create_work", input: { ...firePit, ask_first: false } },
+      { name: "create_work", input: { ...firePit, guessed: false } },
       { name: "delete_work", input: { id: "deck" } },
     );
-    const { send, resume, pending } = setup();
+    const { send, resume, pending } = setup("rarely");
     await send("list my projects, add a fire pit, and delete the old deck");
 
     expect((await pending())?.map((change) => change.tool)).toEqual(["delete_work"]);
@@ -179,11 +212,11 @@ describe("agent graph", () => {
 
   it("loads the building once per round of tool calls, and later calls see earlier changes", async () => {
     claudeCalls(
-      { name: "create_room", input: { name: "Garage", ask_first: false } },
+      { name: "create_room", input: { name: "Garage", guessed: false } },
       { name: "list_rooms", input: {} },
     );
     claudeSays("Added the garage.");
-    const out = await setup().send("add a garage");
+    const out = await setup("rarely").send("add a garage");
 
     expect(loadToolContext).toHaveBeenCalledTimes(1);
     expect(JSON.parse(toolResults(out.messages)[1].content as string)).toHaveLength(3);
@@ -210,10 +243,21 @@ describe("tools", () => {
     for (const tool of TOOLS) expect(tool.definition.input_schema.type, tool.name).toBe("object");
   });
 
-  it("makes Claude decide ask_first on every write, and only on writes", () => {
+  it("says what type of change each write and delete is", () => {
+    const types = Object.fromEntries(TOOLS.filter((tool) => tool.kind !== "read").map((tool) => [tool.name, tool.change({ id: "x" })]));
+    expect(types).toEqual({
+      ...{ create_work: "new", update_work: "edit", delete_work: "delete" },
+      ...{ create_schedule: "new", update_schedule: "quick", complete_schedule: "quick", delete_schedule: "delete" },
+      ...{ create_contact: "new", update_contact: "edit", delete_contact: "delete" },
+      ...{ create_room: "new", update_room: "edit", delete_room: "delete" },
+      ...{ create_item: "new", update_item: "edit", delete_item: "delete" },
+    });
+  });
+
+  it("asks Claude whether it guessed on every write, and only on writes", () => {
     for (const tool of TOOLS) {
       const required = (tool.definition.input_schema.required ?? []) as string[];
-      expect(required.includes("ask_first"), tool.name).toBe(tool.kind === "write");
+      expect(required.includes("guessed"), tool.name).toBe(tool.kind === "write");
     }
   });
 });

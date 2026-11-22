@@ -18,10 +18,10 @@ function effects(name: string, input: Record<string, unknown>) {
 
 describe("every tool", () => {
   it("refuses ids from another building", async () => {
-    await expect(call("update_work", { id: "other-work", title: "Mine now", ask_first: false })).rejects.toThrow("no project or repair with id other-work");
+    await expect(call("update_work", { id: "other-work", title: "Mine now", guessed: false })).rejects.toThrow("no project or repair with id other-work");
     await expect(call("delete_item", { id: "other-item" })).rejects.toThrow("no item");
-    await expect(call("complete_schedule", { id: "other-schedule", ask_first: false })).rejects.toThrow("no schedule");
-    await expect(call("create_item", { room_id: "other-room", name: "Fridge", ask_first: false })).rejects.toThrow("no room");
+    await expect(call("complete_schedule", { id: "other-schedule", guessed: false })).rejects.toThrow("no schedule");
+    await expect(call("create_item", { room_id: "other-room", name: "Fridge", guessed: false })).rejects.toThrow("no room");
   });
 
   it("only lists the current building's records", async () => {
@@ -33,7 +33,7 @@ describe("every tool", () => {
 
 describe("projects and repairs", () => {
   it("creates a project with the app's defaults", async () => {
-    const { output, saved } = await call("create_work", { kind: "project", title: " Fire pit ", room_id: "yard", ask_first: false });
+    const { output, saved } = await call("create_work", { kind: "project", title: " Fire pit ", room_id: "yard", guessed: false });
 
     expect(saved[0]).toMatchObject({
       type: "addWork",
@@ -43,25 +43,25 @@ describe("projects and repairs", () => {
   });
 
   it("puts work on an item in the item's room", async () => {
-    const { saved } = await call("create_work", { kind: "repair", title: "Rattle", item_id: "furnace", ask_first: false });
+    const { saved } = await call("create_work", { kind: "repair", title: "Rattle", item_id: "furnace", guessed: false });
     expect(saved[0]).toMatchObject({ work: { status: "open", itemId: "furnace", spaceId: "kitchen" } });
   });
 
   it("rejects a status or budget that doesn't fit the kind", async () => {
-    await expect(call("create_work", { kind: "project", title: "Deck", status: "fixed", ask_first: false })).rejects.toThrow("A project can't be fixed");
-    await expect(call("create_work", { kind: "repair", title: "Leak", budget: 100, ask_first: false })).rejects.toThrow("Only projects have a budget");
+    await expect(call("create_work", { kind: "project", title: "Deck", status: "fixed", guessed: false })).rejects.toThrow("A project can't be fixed");
+    await expect(call("create_work", { kind: "repair", title: "Leak", budget: 100, guessed: false })).rejects.toThrow("Only projects have a budget");
   });
 
   it("sets the finished date to today when work is finished, and clears it when reopened", async () => {
-    const { ctx, output } = await call("update_work", { id: "faucet", status: "fixed", cost: 150, ask_first: false });
+    const { ctx, output } = await call("update_work", { id: "faucet", status: "fixed", cost: 150, guessed: false });
     expect(output).toMatchObject({ status: "fixed", cost: 150, finished_on: "2026-11-20" });
 
-    const reopened = await call("update_work", { id: "faucet", status: "open", ask_first: false }, ctx);
+    const reopened = await call("update_work", { id: "faucet", status: "open", guessed: false }, ctx);
     expect(reopened.output.finished_on).toBeUndefined();
   });
 
   it("only changes the fields Claude set", async () => {
-    const { saved } = await call("update_work", { id: "deck", title: "New deck", ask_first: false });
+    const { saved } = await call("update_work", { id: "deck", title: "New deck", guessed: false });
     expect(saved[0]).toEqual({ type: "updateWork", id: "deck", patch: { title: "New deck", finishedOn: null } });
   });
 
@@ -76,27 +76,27 @@ describe("schedules", () => {
   it("lists what's due, leaving out paused ones", async () => {
     const ctx = fakeToolContext();
     expect((await call("list_schedules", { due_before: "2026-12-31" }, ctx)).output).toHaveLength(1);
-    await call("update_schedule", { id: "filter", active: false, ask_first: false }, ctx);
+    await call("update_schedule", { id: "filter", active: false, guessed: false }, ctx);
     expect((await call("list_schedules", { due_before: "2026-12-31" }, ctx)).output).toHaveLength(0);
   });
 
   it("counts a new schedule from today when no due date is given", async () => {
-    const { output } = await call("create_schedule", { item_id: "furnace", title: "Check pilot", repeat: { kind: "interval", count: 3, unit: "month" }, ask_first: false });
+    const { output } = await call("create_schedule", { item_id: "furnace", title: "Check pilot", repeat: { kind: "interval", count: 3, unit: "month" }, guessed: false });
     expect(output).toMatchObject({ title: "Check pilot", item: "Furnace", next_due_on: "2027-02-20" });
   });
 
   it("uses the due date Claude gives", async () => {
-    const { output } = await call("create_schedule", { item_id: "furnace", title: "Check pilot", repeat: { kind: "interval", count: 3, unit: "month" }, next_due_on: "2026-12-21", ask_first: false });
+    const { output } = await call("create_schedule", { item_id: "furnace", title: "Check pilot", repeat: { kind: "interval", count: 3, unit: "month" }, next_due_on: "2026-12-21", guessed: false });
     expect(output.next_due_on).toBe("2026-12-21");
   });
 
   it("moves the due date when the repeat changes, like the app", async () => {
-    const { output } = await call("update_schedule", { id: "filter", repeat: { kind: "interval", count: 1, unit: "month" }, ask_first: false });
+    const { output } = await call("update_schedule", { id: "filter", repeat: { kind: "interval", count: 1, unit: "month" }, guessed: false });
     expect(output.next_due_on).toBe("2026-10-01");
   });
 
   it("marks one done today, adds it to history, and moves it forward", async () => {
-    const { output, saved } = await call("complete_schedule", { id: "filter", contact_ids: ["sam"], ask_first: false });
+    const { output, saved } = await call("complete_schedule", { id: "filter", contact_ids: ["sam"], guessed: false });
 
     expect(saved[0]).toMatchObject({
       type: "completeSchedules",
@@ -106,7 +106,7 @@ describe("schedules", () => {
   });
 
   it("rejects unknown contacts", async () => {
-    await expect(call("complete_schedule", { id: "filter", contact_ids: ["nobody"], ask_first: false })).rejects.toThrow("no contact");
+    await expect(call("complete_schedule", { id: "filter", contact_ids: ["nobody"], guessed: false })).rejects.toThrow("no contact");
   });
 });
 
@@ -118,10 +118,10 @@ describe("contacts", () => {
   });
 
   it("creates and updates, with notes as why we like them", async () => {
-    const { saved } = await call("create_contact", { name: "Ana", trade: "roofer", notes: "Honest", ask_first: false });
+    const { saved } = await call("create_contact", { name: "Ana", trade: "roofer", notes: "Honest", guessed: false });
     expect(saved[0]).toMatchObject({ type: "addContact", contact: { name: "Ana", trade: "roofer", whyWeLikeThem: "Honest", photoPath: null } });
 
-    const updated = await call("update_contact", { id: "sam", phone: "555-0199", ask_first: false });
+    const updated = await call("update_contact", { id: "sam", phone: "555-0199", guessed: false });
     expect(updated.saved[0]).toEqual({ type: "updateContact", id: "sam", patch: { phone: "555-0199" } });
   });
 
@@ -139,15 +139,15 @@ describe("rooms and items", () => {
   });
 
   it("creates a room and an item in it", async () => {
-    const room = await call("create_room", { name: "Garage", ask_first: false });
-    const item = await call("create_item", { room_id: room.output.id, name: "Water heater", brand: "Rheem", ask_first: false }, room.ctx);
+    const room = await call("create_room", { name: "Garage", guessed: false });
+    const item = await call("create_item", { room_id: room.output.id, name: "Water heater", brand: "Rheem", guessed: false }, room.ctx);
 
     expect(room.saved[0]).toMatchObject({ type: "addSpace", space: { name: "Garage", kind: "other" } });
     expect(item.output).toMatchObject({ name: "Water heater", room: "Garage", brand: "Rheem" });
   });
 
   it("moves an item to another room", async () => {
-    const { output, ctx } = await call("update_item", { id: "furnace", room_id: "yard", ask_first: false });
+    const { output, ctx } = await call("update_item", { id: "furnace", room_id: "yard", guessed: false });
     expect(output.room).toBe("Backyard");
     expect(ctx.data.work.find((w) => w.id === "faucet")?.spaceId).toBe("yard");
   });
@@ -162,7 +162,7 @@ describe("rooms and items", () => {
 describe("history", () => {
   it("lists finished maintenance and work, newest first", async () => {
     const ctx = fakeToolContext();
-    await call("update_work", { id: "faucet", status: "fixed", ask_first: false }, ctx);
+    await call("update_work", { id: "faucet", status: "fixed", guessed: false }, ctx);
     const { output } = await call("list_history", {}, ctx);
 
     expect(output).toMatchObject([

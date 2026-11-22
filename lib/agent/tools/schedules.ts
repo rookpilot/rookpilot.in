@@ -59,6 +59,8 @@ export const createSchedule = defineTool({
 export const updateSchedule = defineTool({
   name: "update_schedule",
   kind: "write",
+  // Snoozing or pausing is quick. Changing what it is or how often it repeats is an edit.
+  change: (input) => (Object.keys(input).every((key) => ["id", "next_due_on", "active", "guessed"].includes(key)) ? "quick" : "edit"),
   description: "Change a schedule. To snooze it, set a later next_due_on. To pause it, set active to false.",
   input: z.object({
     id: id("schedule"),
@@ -82,6 +84,7 @@ export const updateSchedule = defineTool({
 export const completeSchedule = defineTool({
   name: "complete_schedule",
   kind: "write",
+  change: "quick",
   description: "Mark a scheduled task done. Adds it to the history and moves the next due date forward.",
   input: z.object({
     id: id("schedule"),
