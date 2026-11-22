@@ -42,11 +42,12 @@ async function answerCard(supabase: Client, input: unknown) {
   return last.turn;
 }
 
-/** A Supabase client for `userId` (or signed out), who can see the building or not. */
-function fakeSupabase({ userId = "user-1" as string | null, seesBuilding = true } = {}) {
+/** A Supabase client for `userId` (or signed out), who can see the building or not, with their saved chat level. */
+function fakeSupabase({ userId = "user-1" as string | null, seesBuilding = true, confirmMode = "sometimes" } = {}) {
+  const rows: Record<string, unknown> = { buildings: seesBuilding ? { id: "x" } : null, profiles: { confirm_mode: confirmMode } };
   return {
     auth: { getClaims: async () => ({ data: userId ? { claims: { sub: userId } } : null }) },
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: seesBuilding ? { id: "x" } : null }) }) }) }),
+    from: (table: string) => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: rows[table] }) }) }) }),
   } as unknown as Client;
 }
 
@@ -174,5 +175,15 @@ describe("chat", () => {
     claudeSays("I couldn't find that one.");
     const events = await collect(streamMessage(fakeSupabase(), { ...conversation(), text: "I cleaned their coils" }));
     expect(events).toContainEqual({ type: "step_done", id: "toolu_0", ok: false });
+  });
+
+  it("uses the level the person saved in settings", async () => {
+    const newRepair = { kind: "repair", title: "Fix garbage disposal", guessed: false };
+    claudeCalls("create_work", newRepair);
+    expect(await sendMessage(fakeSupabase(), { ...conversation(), text: "add a disposal repair" })).toMatchObject({ kind: "confirm" });
+
+    claudeCalls("create_work", newRepair);
+    claudeSays("Added it.");
+    expect(await sendMessage(fakeSupabase({ confirmMode: "rarely" }), { ...conversation(), text: "add a disposal repair" })).toEqual({ kind: "reply", text: "Added it." });
   });
 });

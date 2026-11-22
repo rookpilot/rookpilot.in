@@ -177,14 +177,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_url": string | null,"created_at": string,"full_name": string | null,"id": string
+                    "avatar_url": string | null,"confirm_mode": string,"created_at": string,"full_name": string | null,"id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_url"?: string | null,"created_at"?: string,"full_name"?: string | null,"id": string
+                    "avatar_url"?: string | null,"confirm_mode"?: string,"created_at"?: string,"full_name"?: string | null,"id": string
                   }
                   Update: {
-                    "avatar_url"?: string | null,"created_at"?: string,"full_name"?: string | null,"id"?: string
+                    "avatar_url"?: string | null,"confirm_mode"?: string,"created_at"?: string,"full_name"?: string | null,"id"?: string
                   }
                   Relationships: [
                     
