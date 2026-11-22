@@ -17,6 +17,7 @@ import { BUILDING_TYPE_INFO, formatAddressLine } from "@/lib/domain/building";
 
 import { createSettingsActions } from "../actions";
 import { BuildingForm } from "./building-form";
+import { ChatSettings } from "./chat-settings";
 import { ThemePicker } from "./theme-picker";
 
 export function SettingsView() {
@@ -72,6 +73,10 @@ export function SettingsView() {
             Add a building
           </Link>
         </Button>
+      </Section>
+
+      <Section title="Chat" description="How Rookpilot works when you chat with it.">
+        <ChatSettings />
       </Section>
 
       <Section title="Appearance">

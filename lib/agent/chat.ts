@@ -3,6 +3,7 @@ import { Command } from "@langchain/langgraph";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import * as z from "zod";
 import type { Database } from "@/lib/supabase/database.types";
+import type { ConfirmMode } from "./confirm";
 import type { AgentContext } from "./context";
 import { agentGraph } from "./graph";
 import type { PendingChange } from "./nodes/humanReview";
@@ -137,13 +138,18 @@ async function configFor(supabase: Client, input: Conversation): Promise<Config 
   const userId = data?.claims?.sub;
   if (!userId) return error("You're signed out. Sign in again to keep chatting.");
 
-  const { data: building } = await supabase.from("buildings").select("id").eq("id", input.buildingId).maybeSingle();
+  const [{ data: building }, { data: profile }] = await Promise.all([
+    supabase.from("buildings").select("id").eq("id", input.buildingId).maybeSingle(),
+    // Their chat settings. Read here, not sent by the chat, so they always match what's saved.
+    supabase.from("profiles").select("confirm_mode").eq("id", userId).maybeSingle(),
+  ]);
   if (!building) return error("That building wasn't found.");
 
   return {
     // The thread is tied to the person, so nobody can pick up someone else's conversation.
     configurable: { thread_id: `${userId}:${input.threadId}` },
-    context: { buildingId: input.buildingId, supabase, today: input.today },
+    // confirmMode() falls back to the default if the saved value isn't a level.
+    context: { buildingId: input.buildingId, supabase, today: input.today, confirmMode: profile?.confirm_mode as ConfirmMode | undefined },
   };
 }
 

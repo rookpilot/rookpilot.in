@@ -95,7 +95,7 @@ START → agent ──(no tool calls)──→ END
 
 - **agent** sees the whole conversation and every tool, and either replies or asks to use tools.
 - **tools** runs the tool calls and sends the results back to the agent.
-- **human_review** is the confirm card: it shows the change Claude wants to make so the person can confirm it, edit its fields, or cancel it. Whether a change gets a card depends on the person's level (rarely, sometimes, always), the type of change, and whether Claude guessed anything (see the table in `confirm.ts`). Deletes and guesses always get one. The graph pauses with `interrupt()` and the app resumes it with the decisions. A checkpointer saves the paused state per conversation (`thread_id`).
+- **human_review** is the confirm card: it shows the change Claude wants to make so the person can confirm it, edit its fields, or cancel it. Whether a change gets a card depends on the person's level (rarely, sometimes, always), the type of change, and whether Claude guessed anything (see the table in `confirm.ts`). Deletes and guesses always get one. Each person picks their level in Settings → Chat; it's saved as `profiles.confirm_mode` and read on the server for every message. The graph pauses with `interrupt()` and the app resumes it with the decisions. A checkpointer saves the paused state per conversation (`thread_id`).
 
 The app passes `{ buildingId, supabase, confirmMode, today }` in the graph's runtime context. `supabase` is the signed-in person's client, so the access rules still decide what the agent can see and change. Claude never chooses the building, and a tool given an id from another building returns an error.
 
