@@ -39,8 +39,12 @@ export async function callClaude({
   return getClient().beta.messages.create({
     model: MODEL,
     max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
+    betas: ["server-side-fallback-2026-07-01", "thinking-binding-controls-2026-08-01"],
     fallbacks: "default",
+    // Claude's thinking is tied to the exact prompt and tools it was made with. If those change
+    // (a new version of the prompt, a new tool), a saved chat would fail, so drop the old thinking
+    // instead. Claude still sees every message and tool call.
+    thinking: { type: "adaptive", block_binding: { prefix_mismatch_behavior: "drop_block" } },
     output_config: { effort: "low" },
     system,
     messages,

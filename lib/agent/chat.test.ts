@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./llm", () => ({ callClaude: vi.fn() }));
 vi.mock("./tools/context", () => ({ loadToolContext: vi.fn() }));
 
-import { chatTitle, streamAnswer, streamMessage, type ChatEvent } from "./chat";
+import { chatTitle, loadChat, streamAnswer, streamMessage, type ChatEvent } from "./chat";
 import { callClaude } from "./llm";
 import type { PendingChange } from "./nodes/humanReview";
 import { loadToolContext } from "./tools/context";
@@ -216,6 +216,54 @@ describe("chat", () => {
     const supabase = fakeSupabase({ seesBuilding: false });
     await sendMessage(supabase, { ...conversation(), text: "hello" });
     expect(supabase.chats).toEqual([]);
+  });
+  it("adds today's date after the person's message", async () => {
+    claudeSays("Hi!");
+    await sendMessage(fakeSupabase(), { ...conversation(), text: "hello" });
+    const { messages } = vi.mocked(callClaude).mock.calls[0][0];
+    expect(messages[0]).toEqual({ role: "user", content: [{ type: "text", text: "hello" }, { type: "text", text: "Today is 2026-11-20." }] });
+  });
+});
+
+describe("loadChat", () => {
+  beforeEach(() => {
+    vi.mocked(callClaude).mockReset();
+    vi.mocked(loadToolContext).mockImplementation(async () => fakeToolContext());
+  });
+
+  it("opens a chat with the card still waiting, then the reply once it's answered", async () => {
+    const supabase = fakeSupabase();
+    const chat = conversation();
+    claudeCalls("create_work", firePit);
+    await sendMessage(supabase, { ...chat, text: "add a fire pit project" });
+
+    const opened = await loadChat(supabase, { threadId: chat.threadId, buildingId });
+    expect(opened).toEqual({
+      kind: "chat",
+      entries: [
+        { id: "m0", role: "user", text: "add a fire pit project" },
+        { id: "pending", role: "card", changes: [{ toolCallId: "toolu_0", tool: "create_work", kind: "write", input: { kind: "project", title: "Fire pit" } }] },
+      ],
+    });
+
+    claudeSays("Added Fire pit.");
+    await answerCard(supabase, { ...chat, decisions: { toolu_0: { action: "confirm" } } });
+    const after = await loadChat(supabase, { threadId: chat.threadId, buildingId });
+    expect(after.kind === "chat" && after.entries.at(-1)).toMatchObject({ role: "assistant", text: "Added Fire pit.", steps: [{ tool: "create_work", status: "done" }] });
+  });
+
+  it("doesn't open someone else's chat", async () => {
+    const chat = conversation();
+    claudeSays("Hi!");
+    await sendMessage(fakeSupabase({ userId: "user-1" }), { ...chat, text: "hello" });
+    expect(await loadChat(fakeSupabase({ userId: "user-2" }), { threadId: chat.threadId, buildingId })).toEqual({ kind: "chat", entries: [] });
+  });
+
+  it("refuses when signed out or the building isn't theirs", async () => {
+    const chat = { threadId: crypto.randomUUID(), buildingId };
+    expect((await loadChat(fakeSupabase({ userId: null }), chat)).kind).toBe("error");
+    expect((await loadChat(fakeSupabase({ seesBuilding: false }), chat)).kind).toBe("error");
+    expect((await loadChat(fakeSupabase(), { threadId: "nope", buildingId })).kind).toBe("error");
   });
 });
 

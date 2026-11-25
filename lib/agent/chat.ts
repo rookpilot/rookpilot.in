@@ -4,11 +4,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import * as z from "zod";
 import type { Database } from "@/lib/supabase/database.types";
 import type { ConfirmMode } from "./confirm";
-import type { AgentContext } from "./context";
+import { today, type AgentContext } from "./context";
 import { agentGraph } from "./graph";
 import type { PendingChange } from "./nodes/humanReview";
 import type { Message } from "./llm";
-import { lastReply, pendingToolCalls, type ToolCall } from "./state";
+import { lastReply, pendingToolCalls, personMessage, type ToolCall } from "./state";
+import { toTranscript, type TranscriptEntry } from "./transcript";
 
 // What the chat calls (through the streaming route in app/api/chat/route.ts). Each call checks
 // who's asking and what they sent, runs the graph, and sends events as it goes:
@@ -40,6 +41,8 @@ const decision = z.discriminatedUnion("action", [
 ]);
 const answerInput = z.object({ ...conversation, decisions: z.record(z.string(), decision) });
 
+const loadInput = z.object({ threadId: conversation.threadId, buildingId: conversation.buildingId });
+
 export type MessageInput = z.input<typeof messageInput>;
 export type AnswerInput = z.input<typeof answerInput>;
 /** What the chat posts to the route. */
@@ -63,6 +66,24 @@ function step(call: ToolCall, edits?: Record<string, unknown>): ChatEvent {
   return { type: "step", id: call.id, tool: call.name, input };
 }
 
+/** A saved chat, the way the chat shows it, or why it couldn't be opened. */
+export type SavedChat = { kind: "chat"; entries: TranscriptEntry[] } | { kind: "error"; message: string };
+
+/** Opens a saved chat: its messages, the tools Rookpilot used, and a card still waiting. */
+export async function loadChat(supabase: Client, raw: unknown): Promise<SavedChat> {
+  const input = loadInput.safeParse(raw);
+  if (!input.success) return { kind: "error", message: "That chat couldn't be opened." };
+  const config = await configFor(supabase, input.data);
+  if ("kind" in config) return { kind: "error", message: config.kind === "error" ? config.message : "That chat couldn't be opened." };
+  try {
+    const state = await agentGraph.getState(config);
+    return { kind: "chat", entries: toTranscript(state.values.messages ?? [], await pendingChanges(config)) };
+  } catch (cause) {
+    console.error("Opening a chat failed", cause);
+    return { kind: "error", message: "That chat couldn't be opened. Try again in a moment." };
+  }
+}
+
 /** Sends the person's message and runs the agent until it replies or needs the confirm card. */
 export async function* streamMessage(supabase: Client, raw: unknown): AsyncGenerator<ChatEvent> {
   const input = messageInput.safeParse(raw);
@@ -72,7 +93,7 @@ export async function* streamMessage(supabase: Client, raw: unknown): AsyncGener
   if (await pendingChanges(config)) return yield turn(error("Answer the confirm card first."));
   await saveChat(supabase, input.data);
 
-  yield* follow(config, { messages: [{ role: "user", content: input.data.text }] });
+  yield* follow(config, { messages: [personMessage(input.data.text, today(config.context))] });
 }
 
 /** Answers the confirm card and runs the agent on from where it paused. */
@@ -96,7 +117,7 @@ export async function* streamAnswer(supabase: Client, raw: unknown): AsyncGenera
   yield* follow(config, new Command({ resume: decisions }));
 }
 
-type Conversation = z.infer<typeof messageInput> | z.infer<typeof answerInput>;
+type Conversation = z.infer<typeof messageInput> | z.infer<typeof answerInput> | z.infer<typeof loadInput>;
 type Config = { configurable: { thread_id: string }; context: AgentContext };
 /** What one node changed, from stream({ streamMode: "updates" }). */
 type Update = Record<string, { messages?: Message[] } | undefined>;
@@ -151,7 +172,7 @@ async function configFor(supabase: Client, input: Conversation): Promise<Config 
     // The thread is tied to the person, so nobody can pick up someone else's conversation.
     configurable: { thread_id: `${userId}:${input.threadId}` },
     // confirmMode() falls back to the default if the saved value isn't a level.
-    context: { buildingId: input.buildingId, supabase, today: input.today, confirmMode: profile?.confirm_mode as ConfirmMode | undefined },
+    context: { buildingId: input.buildingId, supabase, today: "today" in input ? input.today : undefined, confirmMode: profile?.confirm_mode as ConfirmMode | undefined },
   };
 }
 

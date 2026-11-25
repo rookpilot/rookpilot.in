@@ -66,12 +66,12 @@ describe("agent graph", () => {
     expect(lastReply(out.messages)).toBe("Every 1 to 3 months.");
   });
 
-  it("tells Claude today's date, but not the person's level: the code decides about cards", async () => {
+  it("keeps the date and the person's level out of the prompt, so it never changes", async () => {
     claudeSays("Hi!");
     await setup("always").send("hello");
 
     const { system } = vi.mocked(callClaude).mock.calls[0][0];
-    expect(system).toContain("Today is 2026-11-20.");
+    expect(system).not.toContain("Today is");
     expect(system).not.toContain("always");
   });
 

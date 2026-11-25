@@ -38,6 +38,15 @@ export function pendingToolCalls(messages: Message[]): ToolCall[] {
   return last.content.filter((block): block is ToolCall => block.type === "tool_use");
 }
 
+/**
+ * A message from the person, with today's date added after it. The date goes in the message, not
+ * the system prompt, so the prompt never changes: Claude's saved thinking only works with the
+ * exact prompt it was made with, and a chat can be picked up again days later.
+ */
+export function personMessage(text: string, date: string): Message {
+  return { role: "user", content: [{ type: "text", text }, { type: "text", text: `Today is ${date}.` }] };
+}
+
 /** The text of the last assistant message: what the chat shows as the reply. */
 export function lastReply(messages: Message[]): string {
   const last = messages.findLast((message) => message.role === "assistant");

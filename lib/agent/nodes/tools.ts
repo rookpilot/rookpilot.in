@@ -10,6 +10,9 @@ import { loadToolContext } from "../tools/context";
 
 type ToolResult = Anthropic.Beta.BetaToolResultBlockParam;
 
+/** How a cancelled change's result starts. The saved chat leaves these out (transcript.ts). */
+export const CANCELLED = "The person cancelled this change";
+
 export const toolsNode: GraphNode<typeof AgentState, Partial<AgentContext>> = async (state, config) => {
   const context = await loadToolContext(config.context);
 
@@ -38,7 +41,7 @@ async function runOne(call: ToolCall, decision: Decision | undefined, context: T
   if (tool.kind !== "read") {
     if (!decision) return result("This change wasn't confirmed, so it didn't run.", true);
     if (decision.action === "cancel") {
-      return result(`The person cancelled this change${decision.reason ? `: ${decision.reason}` : "."} Nothing was changed.`);
+      return result(`${CANCELLED}${decision.reason ? `: ${decision.reason}` : "."} Nothing was changed.`);
     }
     if (decision.action === "edit") input = { ...(call.input as object), ...decision.input };
   }
