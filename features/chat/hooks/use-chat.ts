@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import type { ChatRequest, ChatTurn } from "@/lib/agent/chat";
+import type { ChatRequest, ChatTurn, SavedChat } from "@/lib/agent/chat";
 import type { Decisions, PendingChange } from "@/lib/agent/nodes/humanReview";
 import { toISODate } from "@/lib/dates";
 import { reloadAppData } from "@/lib/data/store";
@@ -24,14 +24,25 @@ const newId = () => crypto.randomUUID();
 
 /**
  * The conversation with the agent, streamed from /api/chat. One thread per chat: the server
- * keeps the conversation, so a card answer picks up the same run where it paused.
+ * keeps the conversation, so a card answer picks up the same run where it paused, and an old chat
+ * can be opened again. `onSaved` runs after each turn the server saved, to refresh the chat list.
  */
-export function useChat(buildingId: string | null) {
+export function useChat(buildingId: string | null, onSaved?: () => void) {
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   // Made on the first message, not on render: the page is prerendered, where random values aren't allowed.
   const threadRef = useRef<string | null>(null);
-  const threadId = () => (threadRef.current ??= newId());
+  /** The open chat's id, once it has one, so the chat list can highlight it. */
+  const [chatId, setChatId] = useState<string | null>(null);
+  const threadId = () => {
+    if (!threadRef.current) {
+      threadRef.current = newId();
+      setChatId(threadRef.current);
+    }
+    return threadRef.current;
+  };
   const [thinking, setThinking] = useState(false);
+  /** Opening an old chat. */
+  const [loading, setLoading] = useState(false);
   /** The tools Rookpilot is using right now, shown while it works. */
   const [live, setLive] = useState<Step[]>([]);
   // Guards against a double click sending twice before `thinking` re-renders.
@@ -77,7 +88,10 @@ export function useChat(buildingId: string | null) {
       if (turn.kind === "confirm") add({ id: newId(), role: "card", changes: turn.changes, ...withSteps });
       if (turn.kind === "error") add({ id: newId(), role: "assistant", text: turn.message, error: true, ...withSteps });
       // The agent saves on the server, so show its changes on the other tabs too.
-      if (turn.kind !== "error") reloadAppData();
+      if (turn.kind !== "error") {
+        reloadAppData();
+        onSaved?.();
+      }
       return turn.kind !== "error";
     } catch {
       if (controller.signal.aborted) return false;
@@ -95,7 +109,7 @@ export function useChat(buildingId: string | null) {
 
   function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || busy.current || waitingCard) return;
+    if (!trimmed || busy.current || loading || waitingCard) return;
     add({ id: newId(), role: "user", text: trimmed });
     if (!buildingId) {
       add({ id: newId(), role: "assistant", text: "Add a building first, then I can help with it.", error: true });
@@ -120,10 +134,39 @@ export function useChat(buildingId: string | null) {
     request.current = null;
     busy.current = false;
     setThinking(false);
+    setLoading(false);
     setLive([]);
     setEntries([]);
     threadRef.current = null;
+    setChatId(null);
   }
 
-  return { entries, thinking, live, waitingCard, send, answer, reset };
+  /** Opens a saved chat and picks it up where it left off, including a card still waiting. */
+  async function open(id: string) {
+    if (!buildingId || id === threadRef.current) return;
+    reset();
+    threadRef.current = id;
+    setChatId(id);
+    setLoading(true);
+    const controller = new AbortController();
+    request.current = controller;
+    try {
+      const params = new URLSearchParams({ threadId: id, buildingId });
+      const response = await fetch(`/api/chat?${params}`, { signal: controller.signal });
+      if (!response.ok) throw new Error(`Opening the chat failed: ${response.status}`);
+      const chat = (await response.json()) as SavedChat;
+      if (chat.kind === "error") setEntries([{ id: newId(), role: "assistant", text: chat.message, error: true }]);
+      else setEntries(chat.entries);
+    } catch {
+      if (controller.signal.aborted) return;
+      setEntries([{ id: newId(), role: "assistant", text: "Couldn't open that chat. Check your connection and try again.", error: true }]);
+    } finally {
+      if (request.current === controller) {
+        request.current = null;
+        setLoading(false);
+      }
+    }
+  }
+
+  return { entries, thinking, loading, live, waitingCard, chatId, send, answer, reset, open };
 }

@@ -1,5 +1,5 @@
 import type { GraphNode } from "@langchain/langgraph";
-import { today, type AgentContext } from "../context";
+import type { AgentContext } from "../context";
 import { callClaude } from "../llm";
 import type { AgentState } from "../state";
 import { TOOL_DEFINITIONS } from "../tools";
@@ -23,9 +23,9 @@ If the person cancels a change, don't try it again unless they ask. Reply in 1 t
 const DECLINED = "Sorry, I can't help with that one.";
 
 export const agentNode: GraphNode<typeof AgentState, Partial<AgentContext>> = async (state, config) => {
-  // The date goes last, so the rest of the prompt stays the same for everyone and caches well.
-  const system = `${SYSTEM}\n\nToday is ${today(config.context)}.`;
-  const response = await callClaude({ system, messages: state.messages, tools: TOOL_DEFINITIONS });
+  // The prompt never changes, so it caches well and saved chats keep working. Each message the
+  // person sends carries today's date instead (personMessage in state.ts).
+  const response = await callClaude({ system: SYSTEM, messages: state.messages, tools: TOOL_DEFINITIONS });
   // Keep every content block (text, thinking, tool calls): later calls send them back as is.
   const content = response.stop_reason === "refusal" ? DECLINED : response.content;
   return { messages: [{ role: "assistant", content }] };

@@ -2,14 +2,16 @@
 
 import { Menu, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ChatLauncher } from "@/features/chat/components/chat-launcher";
 import { ChatPanel } from "@/features/chat/components/chat-panel";
+import { ChatSidebar } from "@/features/chat/components/chat-sidebar";
 import { useChat } from "@/features/chat/hooks/use-chat";
+import { useChatList } from "@/features/chat/hooks/use-chat-list";
 import { CommandMenu } from "@/features/command/components/command-menu";
 import { useHotkey } from "@/hooks/use-hotkey";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -22,6 +24,7 @@ import { AppSidebar } from "./app-sidebar";
 
 /**
  * Wide screens: a collapsible sidebar, the page on a raised panel, and a chat panel that docks on the right.
+ * Full-screen chat swaps the sidebar for the person's past chats.
  * Phones: a top bar with a slide-out menu, and chat as a full-screen sheet.
  * Shortcuts: ⌘B sidebar, ⌘J chat, ⌘K search.
  */
@@ -42,7 +45,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
-  const chat = useChat(useCurrentBuilding()?.building?.id ?? null);
+  const buildingId = useCurrentBuilding()?.building?.id ?? null;
+  const chatList = useChatList(buildingId);
+  const chat = useChat(buildingId, () => void chatList.reload());
+  // Chats belong to one building, so switching buildings starts a new one.
+  const chatBuilding = useRef(buildingId);
+  useEffect(() => {
+    if (buildingId === chatBuilding.current) return;
+    chatBuilding.current = buildingId;
+    chat.reset();
+  }, [buildingId, chat]);
   // Matches Tailwind's lg breakpoint, where the chat docks instead of covering the page.
   const wide = useMediaQuery("(min-width: 1024px)");
 
@@ -66,8 +78,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     live: chat.live,
     waitingCard: chat.waitingCard,
     onSend: chat.send,
+    history: { chats: chatList.chats, currentId: chat.chatId, onOpen: (id: string) => void chat.open(id) },
     onAnswer: chat.answer,
     onNewChat: chat.reset,
+    loading: chat.loading,
   };
 
   const controls = {
@@ -84,10 +98,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <aside
           className={cn(
             "hidden shrink-0 overflow-hidden transition-[width] duration-300 ease-out motion-reduce:transition-none lg:block",
-            collapsed ? "w-[68px]" : "w-64",
+            collapsed && !expanded ? "w-[68px]" : "w-64",
           )}
         >
-          <AppSidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
+          {expanded && wide ? (
+            <ChatSidebar
+              chats={chatList.chats}
+              currentId={chat.chatId}
+              onOpen={(id) => void chat.open(id)}
+              onNewChat={chat.reset}
+              onBack={() => setChatMode("docked")}
+            />
+          ) : (
+            <AppSidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
+          )}
         </aside>
 
         <div className="flex min-w-0 flex-1 gap-2 lg:py-2 lg:pr-2">

@@ -1,4 +1,4 @@
-import { streamAnswer, streamMessage, type ChatEvent, type ChatRequest } from "@/lib/agent/chat";
+import { loadChat, streamAnswer, streamMessage, type ChatEvent, type ChatRequest } from "@/lib/agent/chat";
 import { createClient } from "@/lib/supabase/server";
 
 // The chat's line to the agent. Streams events as the agent works (one JSON object per line),
@@ -14,6 +14,14 @@ export async function POST(request: Request) {
   return new Response(toLines(events), {
     headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
   });
+}
+
+/** Opens a saved chat: GET /api/chat?threadId=…&buildingId=… */
+export async function GET(request: Request) {
+  const params = new URL(request.url).searchParams;
+  const supabase = await createClient();
+  const chat = await loadChat(supabase, { threadId: params.get("threadId"), buildingId: params.get("buildingId") });
+  return Response.json(chat, { headers: { "Cache-Control": "no-store" } });
 }
 
 /** Sends each event as soon as it's ready, and stops following the run if the person leaves. */

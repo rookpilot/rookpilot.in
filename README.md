@@ -116,6 +116,8 @@ The chat reaches the agent through `POST /api/chat` (`app/api/chat/route.ts`), w
 
 Saved chats live in two places (migration `chats`). `public.chats` is the list of each person's chats, private to them: a chat is added on its first message, titled with that message, and moved to the top on each one after. The `agent` schema holds LangGraph's memory of each conversation, under the thread id `<user id>:<chat id>`. Only the server reads it (`checkpointer.ts`, over `DATABASE_URL`), and the API doesn't expose it. Without `DATABASE_URL`, chats are kept in memory and lost on restart. Deleting a chat deletes its memory.
 
+Past chats: the docked chat's history button shows them, and full-screen chat swaps the app's sidebar for them. Opening one calls `GET /api/chat`, which rebuilds it from that memory (`transcript.ts`): messages, the tools Rookpilot used, its replies, and a card still waiting.
+
 `npm run agent:graph` compiles the graph and writes `agent-graph.html` with the diagram. To see runs in LangSmith, also set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (see `.env.example`). Tests replace Claude with a fake and Supabase with a made-up building (`tools/fakeContext.ts`), so they're free.
 
 ## Routes
