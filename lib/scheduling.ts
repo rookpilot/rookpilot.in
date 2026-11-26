@@ -55,9 +55,14 @@ export function sortByDue<T extends Pick<Schedule, "nextDueOn" | "active">>(sche
   return schedules.filter((s) => s.active).sort((a, b) => a.nextDueOn.localeCompare(b.nextDueOn));
 }
 
+/** How early a seasonal task can be done and still count for its coming season. */
+const SEASON_MONTHS = 3;
+
 /**
  * Where a timer lands after it's done on `doneOn`. Logging an older completion
- * than the last one adds to history but doesn't move the timer back.
+ * than the last one adds to history but doesn't move the timer back. A seasonal task
+ * done a little early (up to a season before it's due) counts for that season, so it
+ * moves on to the next one instead of staying put.
  */
 export function afterDone(
   schedule: Pick<Schedule, "repeat" | "lastDoneOn" | "nextDueOn">,
@@ -67,5 +72,7 @@ export function afterDone(
   if (schedule.lastDoneOn && schedule.lastDoneOn > doneOn) {
     return { lastDoneOn: schedule.lastDoneOn, nextDueOn: schedule.nextDueOn };
   }
-  return { lastDoneOn: doneOn, nextDueOn: computeNextDue(schedule.repeat, doneOn, hemisphere) };
+  const early =
+    schedule.repeat.kind === "seasonal" && doneOn < schedule.nextDueOn && doneOn >= addInterval(schedule.nextDueOn, -SEASON_MONTHS, "month");
+  return { lastDoneOn: doneOn, nextDueOn: computeNextDue(schedule.repeat, early ? schedule.nextDueOn : doneOn, hemisphere) };
 }

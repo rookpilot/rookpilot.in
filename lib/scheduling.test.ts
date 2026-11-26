@@ -73,4 +73,11 @@ describe("afterDone", () => {
     const fall = { repeat: { kind: "seasonal", seasons: ["fall"] } as const, lastDoneOn: null, nextDueOn: "2026-09-01" };
     expect(afterDone(fall, "2026-10-10", "north").nextDueOn).toBe("2027-09-01");
   });
+
+  it("counts a seasonal task done a little early for its coming season", () => {
+    const winter = { repeat: { kind: "seasonal", seasons: ["winter"] } as const, lastDoneOn: null, nextDueOn: "2026-12-01" };
+    expect(afterDone(winter, "2026-11-26", "north")).toEqual({ lastDoneOn: "2026-11-26", nextDueOn: "2027-12-01" });
+    // Logging last winter's job doesn't skip this winter.
+    expect(afterDone(winter, "2025-12-05", "north").nextDueOn).toBe("2026-12-01");
+  });
 });

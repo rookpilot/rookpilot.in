@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 
 import { useOnboarding, type OnboardingController } from "../hooks/use-onboarding";
 import { STEPS } from "../steps";
-import { BUBBLE_AVOID_ATTRIBUTE, FloatingBubbles } from "./floating-bubbles";
 import { AddressStep } from "./steps/address-step";
 import { BasicsStep } from "./steps/basics-step";
 import { BuildingTypeStep } from "./steps/building-type-step";
@@ -34,7 +33,6 @@ export function OnboardingWizard() {
 
   return (
     <div className="relative isolate flex min-h-svh flex-col bg-background">
-      <FloatingBubbles />
       <header className="relative z-20 flex h-16 items-center justify-between px-4 sm:px-8">
         <Logo href="/signup" />
         <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground" aria-label="Exit setup" onClick={wizard.exit}>
@@ -55,7 +53,6 @@ export function OnboardingWizard() {
       >
         <div
           key={step.id}
-          {...{ [BUBBLE_AVOID_ATTRIBUTE]: "" }}
           className={cn(
             "flex w-full flex-col gap-8 animate-in duration-500 ease-out fade-in-0 motion-reduce:animate-none",
             step.id === "items" || step.id === "type" ? "max-w-3xl" : "max-w-xl",
